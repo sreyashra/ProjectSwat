@@ -12,6 +12,7 @@ class UInputMappingContext;
 class UInputAction;
 class UCharacterTrajectoryComponent;
 struct FInputActionValue;
+class UWidgetComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSwatCharacter, Log, All);
 
@@ -54,6 +55,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	UWidgetComponent* OverheadWidget;
 	
 public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }

@@ -1,15 +1,15 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "MultiplayerSession.h"
+#include "MultiplayerSessions.h"
 
-#define LOCTEXT_NAMESPACE "FMultiplayerSessionModule"
+#define LOCTEXT_NAMESPACE "FMultiplayerSessionsModule"
 
-void FMultiplayerSessionModule::StartupModule()
+void FMultiplayerSessionsModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 }
 
-void FMultiplayerSessionModule::ShutdownModule()
+void FMultiplayerSessionsModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -17,4 +17,4 @@ void FMultiplayerSessionModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FMultiplayerSessionModule, MultiplayerSession)
+IMPLEMENT_MODULE(FMultiplayerSessionsModule, MultiplayerSessions)
