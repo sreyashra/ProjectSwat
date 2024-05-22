@@ -39,6 +39,8 @@ ASwatCharacter::ASwatCharacter()
 
 	Combat = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
 	Combat->SetIsReplicated(true);
+
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
 void ASwatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -79,6 +81,11 @@ void ASwatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Started, this, &ASwatCharacter::Equip);
+
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ASwatCharacter::CrouchButtonPressed);
+
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ASwatCharacter::Aim);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ASwatCharacter::StopAim);
 	}
 	else
 	{
@@ -147,6 +154,31 @@ void ASwatCharacter::ServerEquip_Implementation()
 	}
 }
 
+void ASwatCharacter::CrouchButtonPressed()
+{
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Crouch();
+	}
+}
+
+void ASwatCharacter::Aim()
+{
+	if (Combat)
+	{
+		Combat->SetAiming(true);
+	}
+}
+
+void ASwatCharacter::StopAim()
+{
+	Combat->SetAiming(false);
+}
+
 void ASwatCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
 	if (OverlappingWeapon)
@@ -175,4 +207,14 @@ void ASwatCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 	{
 		LastWeapon->ShowPickupWidget(false);
 	}
+}
+
+bool ASwatCharacter::IsWeaponEquipped()
+{
+	return (Combat && Combat->EquippedWeapon);
+}
+
+bool ASwatCharacter::IsAiming()
+{
+	return (Combat && Combat->bAiming);
 }

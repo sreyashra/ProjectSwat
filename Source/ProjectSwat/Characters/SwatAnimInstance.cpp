@@ -36,5 +36,11 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsInAir = SwatCharacter->GetCharacterMovement()->IsFalling();
 
 		bIsAccelerating = SwatCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0 ? true : false;
+		
+		bWeaponEquipped = SwatCharacter->IsWeaponEquipped();
+
+		bIsCrouched = SwatCharacter->bIsCrouched;
+
+		bAiming = SwatCharacter->IsAiming();
 	}
 }
