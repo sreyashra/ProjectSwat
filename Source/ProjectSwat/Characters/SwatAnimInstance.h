@@ -9,6 +9,8 @@
 class ASwatCharacter;
 class UCharacterTrajectoryComponent;
 
+DECLARE_LOG_CATEGORY_EXTERN(LogSwatAnimInstance, Log, All);
+
 UCLASS()
 class PROJECTSWAT_API USwatAnimInstance : public UAnimInstance
 {
@@ -42,4 +44,14 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = Combat, meta=(AllowPrivateAccess = "true"))
 	bool bAiming;
+
+	UPROPERTY(BlueprintReadOnly, Category = Movement, meta=(AllowPrivateAccess = "true"))
+	float YawOffset;
+
+	UPROPERTY(BlueprintReadOnly, Category = Movement, meta=(AllowPrivateAccess = "true"))
+	float Lean;
+
+	FRotator CharacterRotationLastFrame;
+	FRotator CharacterRotation;
+	FRotator DeltaRotation;
 };

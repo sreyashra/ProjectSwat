@@ -5,6 +5,9 @@
 #include "CharacterTrajectoryComponent.h"
 #include "SwatCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+
+DEFINE_LOG_CATEGORY(LogSwatAnimInstance);
 
 void USwatAnimInstance::NativeInitializeAnimation()
 {
@@ -42,5 +45,19 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsCrouched = SwatCharacter->bIsCrouched;
 
 		bAiming = SwatCharacter->IsAiming();
+
+		// Yaw offset for strafing
+		FRotator AimRotation = SwatCharacter->GetBaseAimRotation();
+		FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(SwatCharacter->GetVelocity());
+		FRotator DeltaRot = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
+		DeltaRotation = FMath::RInterpTo(DeltaRotation, DeltaRot, DeltaSeconds, 6.f);
+		YawOffset = DeltaRotation.Yaw;
+
+		CharacterRotationLastFrame = CharacterRotation;
+		CharacterRotation = SwatCharacter->GetActorRotation();
+		const FRotator Delta = UKismetMathLibrary::NormalizedDeltaRotator(CharacterRotation, CharacterRotationLastFrame);
+		const float Target = Delta.Yaw/DeltaSeconds;
+		const float Interp = FMath::FInterpTo(Lean, Target, DeltaSeconds, 6.f);
+		Lean = FMath::Clamp(Interp, -90.f, 90.f);
 	}
 }
