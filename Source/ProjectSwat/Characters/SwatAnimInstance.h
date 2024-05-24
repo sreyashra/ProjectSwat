@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "ProjectSwat/ProjectSwatTypes/TurningInPlace.h"
 #include "SwatAnimInstance.generated.h"
 
 class ASwatCharacter;
 class UCharacterTrajectoryComponent;
+class AWeapon;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSwatAnimInstance, Log, All);
 
@@ -42,6 +44,8 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Combat, meta=(AllowPrivateAccess = "true"))
 	bool bWeaponEquipped;
 
+	AWeapon* EquippedWeapon;
+
 	UPROPERTY(BlueprintReadOnly, Category = Combat, meta=(AllowPrivateAccess = "true"))
 	bool bAiming;
 
@@ -51,7 +55,19 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Movement, meta=(AllowPrivateAccess = "true"))
 	float Lean;
 
+	UPROPERTY(BlueprintReadOnly, Category = Movement, meta=(AllowPrivateAccess = "true"))
+	float AO_Yaw;
+
+	UPROPERTY(BlueprintReadOnly, Category = Movement, meta=(AllowPrivateAccess = "true"))
+	float AO_Pitch;
+
 	FRotator CharacterRotationLastFrame;
 	FRotator CharacterRotation;
 	FRotator DeltaRotation;
+
+	UPROPERTY(BlueprintReadOnly, Category = Movement, meta=(AllowPrivateAccess = "true"))
+	FTransform LeftHandTransform;
+
+	UPROPERTY(BlueprintReadOnly, Category = Movement, meta=(AllowPrivateAccess = "true"))
+	ETurningInPlace TurningInPlace;
 };

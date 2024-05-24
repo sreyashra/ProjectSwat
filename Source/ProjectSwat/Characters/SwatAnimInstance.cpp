@@ -6,6 +6,7 @@
 #include "SwatCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "ProjectSwat/Weapons/Weapon.h"
 
 DEFINE_LOG_CATEGORY(LogSwatAnimInstance);
 
@@ -41,10 +42,13 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsAccelerating = SwatCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0 ? true : false;
 		
 		bWeaponEquipped = SwatCharacter->IsWeaponEquipped();
+		EquippedWeapon = SwatCharacter->GetEquippedWeapon();
 
 		bIsCrouched = SwatCharacter->bIsCrouched;
 
 		bAiming = SwatCharacter->IsAiming();
+
+		TurningInPlace = SwatCharacter->GetTurningInPlace();
 
 		// Yaw offset for strafing
 		FRotator AimRotation = SwatCharacter->GetBaseAimRotation();
@@ -59,5 +63,18 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		const float Target = Delta.Yaw/DeltaSeconds;
 		const float Interp = FMath::FInterpTo(Lean, Target, DeltaSeconds, 6.f);
 		Lean = FMath::Clamp(Interp, -90.f, 90.f);
+
+		AO_Yaw = SwatCharacter->GetAO_Yaw();
+		AO_Pitch = SwatCharacter->GetAO_Pitch();
+
+		if (bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetWeaponMesh() && SwatCharacter->GetMesh())
+		{
+			LeftHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), RTS_World);
+			FVector OutPosition;
+			FRotator OutRotation;
+			SwatCharacter->GetMesh()->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
+			LeftHandTransform.SetLocation(OutPosition);
+			LeftHandTransform.SetRotation(FQuat(OutRotation));
+		}
 	}
 }
