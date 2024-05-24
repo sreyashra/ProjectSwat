@@ -12,8 +12,6 @@
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	this->SetIsReplicated(true);
-
 	BaseWalkSpeed = 600.f;
 	AimWalkSpeed = 450.f;
 }

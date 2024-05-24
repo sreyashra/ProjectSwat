@@ -45,6 +45,8 @@ protected:
 	void Aim();
 	void StopAim();
 
+	virtual void Jump() override;
+
 	void AimOffset(float DeltaTime);
 
 private:	
