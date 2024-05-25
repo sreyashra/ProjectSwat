@@ -16,6 +16,7 @@ class UCharacterTrajectoryComponent;
 struct FInputActionValue;
 class UWidgetComponent;
 class AWeapon;
+class UAnimMontage;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSwatCharacter, Log, All);
 
@@ -35,6 +36,8 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
+	void PlayFireMontage(bool bAiming);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -44,6 +47,8 @@ protected:
 	void CrouchButtonPressed();
 	void Aim();
 	void StopAim();
+	void Fire();
+	void StopFire();
 
 	virtual void Jump() override;
 
@@ -79,6 +84,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* AimAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
+	UInputAction* FireAction;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	UWidgetComponent* OverheadWidget;
@@ -102,6 +110,9 @@ private:
 
 	ETurningInPlace TurningInPlace;
 	void TurnInPlace(float DeltaTime);
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* FireWeaponMontage;
 	
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);

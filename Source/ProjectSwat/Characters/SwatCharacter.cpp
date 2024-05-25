@@ -8,6 +8,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
+#include "SwatAnimInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -99,6 +100,9 @@ void ASwatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ASwatCharacter::Aim);
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ASwatCharacter::StopAim);
+
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ASwatCharacter::Fire);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ASwatCharacter::StopFire);
 	}
 	else
 	{
@@ -113,6 +117,20 @@ void ASwatCharacter::PostInitializeComponents()
 	if (Combat)
 	{
 		Combat->Character = this;
+	}
+}
+
+void ASwatCharacter::PlayFireMontage(bool bAiming)
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && FireWeaponMontage)
+	{
+		AnimInstance->Montage_Play(FireWeaponMontage);
+		FName SectionName = FName("RifleAim");
+		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
 
@@ -190,6 +208,24 @@ void ASwatCharacter::Aim()
 void ASwatCharacter::StopAim()
 {
 	Combat->SetAiming(false);
+}
+
+void ASwatCharacter::Fire()
+{
+	if (Combat)
+	{
+		Combat->Fire(true);
+		UE_LOG(LogSwatCharacter, Display, TEXT("Fire function called"));
+	}
+}
+
+void ASwatCharacter::StopFire()
+{
+	if (Combat)
+	{
+		Combat->Fire(false); // change this to false
+		UE_LOG(LogSwatCharacter, Display, TEXT("StopFire function called"));
+	}
 }
 
 void ASwatCharacter::Jump()

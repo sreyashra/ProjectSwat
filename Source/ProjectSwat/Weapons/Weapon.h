@@ -17,6 +17,7 @@ enum class EWeaponState : uint8
 
 class USphereComponent;
 class UWidgetComponent;
+class UAnimationAsset;
 
 UCLASS()
 class PROJECTSWAT_API AWeapon : public AActor
@@ -33,6 +34,8 @@ public:
 	void ShowPickupWidget(bool bShowWidget);
 	
 	void SetWeaponState(EWeaponState State);
+
+	virtual void FireWeapon(const FVector& HitTarget);
 
 protected:
 	virtual void BeginPlay() override;
@@ -60,6 +63,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	UWidgetComponent* PickupWidget;
+
+	UPROPERTY(EditAnywhere, Category = WeaponProperties)
+	UAnimationAsset* FireAnimation;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class ACasing> CasingClass;
 	
 public:
 	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
