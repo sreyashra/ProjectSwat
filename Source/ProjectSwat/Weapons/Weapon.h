@@ -18,6 +18,7 @@ enum class EWeaponState : uint8
 class USphereComponent;
 class UWidgetComponent;
 class UAnimationAsset;
+class UTexture2D;
 
 UCLASS()
 class PROJECTSWAT_API AWeapon : public AActor
@@ -36,6 +37,24 @@ public:
 	void SetWeaponState(EWeaponState State);
 
 	virtual void FireWeapon(const FVector& HitTarget);
+
+	/*
+	 * Textures for weapon crosshairs
+	 */
+	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UTexture2D* CrosshairsCenter;
+
+	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UTexture2D* CrosshairsLeft;
+
+	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UTexture2D* CrosshairsRight;
+
+	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UTexture2D* CrosshairsTop;
+
+	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UTexture2D* CrosshairsBottom;
 
 protected:
 	virtual void BeginPlay() override;

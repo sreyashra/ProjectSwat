@@ -8,8 +8,10 @@
 
 #define TRACE_LENGTH 80000
 
+class ASwatPlayerController;
 class AWeapon;
 class ASwatCharacter;
+class ASwatHUD;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTSWAT_API UCombatComponent : public UActorComponent
@@ -48,8 +50,12 @@ protected:
 
 	void TraceUnderCrosshairs(FHitResult& TraceHitResult);
 
+	void SetHUDCrosshairs(float DeltaTime);
+
 private:
 	ASwatCharacter* Character;
+	ASwatPlayerController* PlayerController;
+	ASwatHUD* HUD;
 	
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
 	AWeapon* EquippedWeapon;
