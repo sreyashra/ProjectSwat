@@ -69,4 +69,32 @@ private:
 	float AimWalkSpeed;
 
 	bool bFireButtonPressed;
+
+	/*
+	 * HUD and crosshair
+	 */
+	float CrosshairVelocityFactor;
+	float CrosshairInAirFactor;
+
+	FVector HitTarget;
+
+	/*
+	 *Aiming and FOV
+	 */
+	//FOV when not aiming, set to camera's base FOV in begin play.
+	float DefaultFOV;
+
+	UPROPERTY(EditAnywhere, Category=Combat)
+	float ZoomedFOV = 30.f;
+
+	float CurrentFOV;
+
+	UPROPERTY(EditAnywhere)
+	float ZoomInterpSpeed = 20.f;
+
+	void InterpFOV(float DeltaTime);
+
+public:
+	
+	 
 };

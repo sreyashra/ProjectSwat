@@ -348,3 +348,9 @@ AWeapon* ASwatCharacter::GetEquippedWeapon()
 
 	return Combat->EquippedWeapon;
 }
+
+FVector ASwatCharacter::GetHitTarget() const
+{
+	if (Combat == nullptr) return FVector();
+	return Combat->HitTarget;
+}
