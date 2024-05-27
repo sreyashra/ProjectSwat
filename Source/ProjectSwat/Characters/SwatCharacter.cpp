@@ -17,6 +17,7 @@
 #include "ProjectSwat/SwatComponents/CombatComponent.h"
 #include "ProjectSwat/Weapons/Weapon.h"
 #include "ProjectSwat/ProjectSwat.h"
+#include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
 
 DEFINE_LOG_CATEGORY(LogSwatCharacter);
 
@@ -63,6 +64,7 @@ void ASwatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME_CONDITION(ASwatCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(ASwatCharacter, Health);
 }
 
 void ASwatCharacter::OnRep_ReplicatedMovement()
@@ -76,7 +78,13 @@ void ASwatCharacter::OnRep_ReplicatedMovement()
 void ASwatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	UpdateHUDHealth();
+
+	if (HasAuthority())
+	{
+		OnTakeAnyDamage.AddDynamic(this, &ASwatCharacter::ASwatCharacter::ReceiveDamage);
+	}
 }
 
 void ASwatCharacter::Tick(float DeltaTime)
@@ -171,6 +179,14 @@ void ASwatCharacter::PlayHitReactMontage()
 		FName SectionName("FromFront");
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
+}
+
+void ASwatCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatorController, AActor* DamageCauser)
+{
+	Health = FMath::Clamp(Health-Damage, 0.f, MaxHealth);
+	UpdateHUDHealth();
+	PlayHitReactMontage();
 }
 
 void ASwatCharacter::Move(const FInputActionValue& Value)
@@ -383,11 +399,6 @@ void ASwatCharacter::TurnInPlace(float DeltaTime)
 	}
 }
 
-void ASwatCharacter::MultiCastHit_Implementation()
-{
-	PlayHitReactMontage();
-}
-
 void ASwatCharacter::HideCameraIfCharacterIsClose()
 {
 	if (!IsLocallyControlled()) return;
@@ -415,6 +426,21 @@ float ASwatCharacter::CalculateSpeed()
 	FVector Velocity = GetVelocity();
 	Velocity.Z = 0.f;
 	return Velocity.Size();
+}
+
+void ASwatCharacter::OnRep_Health()
+{
+	PlayHitReactMontage();
+	UpdateHUDHealth();
+}
+
+void ASwatCharacter::UpdateHUDHealth()
+{
+	SwatPlayerController = SwatPlayerController == nullptr ? Cast<ASwatPlayerController>(GetController()) : SwatPlayerController;
+	if (SwatPlayerController)
+	{
+		SwatPlayerController->SetHUDHealth(Health, MaxHealth);
+	}
 }
 
 void ASwatCharacter::SetOverlappingWeapon(AWeapon* Weapon)

@@ -18,6 +18,7 @@ struct FInputActionValue;
 class UWidgetComponent;
 class AWeapon;
 class UAnimMontage;
+class ASwatPlayerController;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSwatCharacter, Log, All);
 
@@ -38,9 +39,7 @@ public:
 	virtual void PostInitializeComponents() override;
 
 	void PlayFireMontage(bool bAiming);
-
-	UFUNCTION(NetMulticast, Unreliable)
-	void MultiCastHit();
+	
 
 	virtual void OnRep_ReplicatedMovement() override;
 
@@ -64,6 +63,10 @@ protected:
 	void SimProxiesTurn();
 
 	void PlayHitReactMontage();
+
+	UFUNCTION()
+	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
+	void UpdateHUDHealth();
 
 private:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta=(AllowPrivateAccess = "true"))
@@ -139,6 +142,20 @@ private:
 	float ProxyYaw;
 	float TimeSinceLastReplicatedMovement;
 	float CalculateSpeed();
+
+	/*
+	 * Player health
+	 */
+	UPROPERTY(EditAnywhere, Category=PlayerStats)
+	float MaxHealth = 100.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = PlayerStats)
+	float Health = 100.f;
+
+	UFUNCTION()
+	void OnRep_Health();
+
+	ASwatPlayerController* SwatPlayerController;
 	
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);

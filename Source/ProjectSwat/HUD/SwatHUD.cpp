@@ -2,6 +2,27 @@
 
 
 #include "SwatHUD.h"
+//#include "Blueprint/UserWidget.h"
+#include "CharacterOverlay.h"
+#include "GameFramework/PlayerController.h"
+
+void ASwatHUD::BeginPlay()
+{
+	Super::BeginPlay();
+
+	AddCharacterOverlay();
+}
+
+void ASwatHUD::AddCharacterOverlay()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+
+	if (PlayerController && CharacterOverlayClass)
+	{
+		CharacterOverlay = CreateWidget<UCharacterOverlay>(PlayerController, CharacterOverlayClass);
+		CharacterOverlay->AddToViewport();
+	}
+}
 
 void ASwatHUD::DrawHUD()
 {
