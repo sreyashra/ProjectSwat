@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProjectSwat/HUD/SwatHUD.h"
 #include "CombatComponent.generated.h"
 
 #define TRACE_LENGTH 80000
@@ -40,7 +41,8 @@ protected:
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
 
-	void Fire(bool bPressed);
+	void Fire();
+	void FirePressed(bool bPressed);
 
 	UFUNCTION(Server, Reliable)
 	void ServerFire(const FVector_NetQuantize& TraceHitTarget);
@@ -75,8 +77,12 @@ private:
 	 */
 	float CrosshairVelocityFactor;
 	float CrosshairInAirFactor;
+	float CrosshairAimFactor;
+	float CrosshairShootingFactor;
 
 	FVector HitTarget;
+
+	FHUDPackage HUDPackage;
 
 	/*
 	 *Aiming and FOV
@@ -93,6 +99,19 @@ private:
 	float ZoomInterpSpeed = 20.f;
 
 	void InterpFOV(float DeltaTime);
+
+	/*
+	 * Auto Fire
+	 */
+	FTimerHandle FireTimer;
+
+	UPROPERTY(EditAnywhere, Category=Combat)
+	float FireDelay;
+
+	bool bCanFire = true;
+
+	void StartFireTimer();
+	void FireTimerFinished();
 
 public:
 	

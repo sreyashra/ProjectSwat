@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "ProjectSwat/ProjectSwatTypes/TurningInPlace.h"
+#include "ProjectSwat/Interfaces/InteractWithCrosshairsInterface.h"
 #include "SwatCharacter.generated.h"
 
 class UCombatComponent;
@@ -21,7 +22,7 @@ class UAnimMontage;
 DECLARE_LOG_CATEGORY_EXTERN(LogSwatCharacter, Log, All);
 
 UCLASS(config=Game)
-class PROJECTSWAT_API ASwatCharacter : public ACharacter
+class PROJECTSWAT_API ASwatCharacter : public ACharacter, public IInteractWithCrosshairsInterface
 {
 	GENERATED_BODY()
 
@@ -38,6 +39,11 @@ public:
 
 	void PlayFireMontage(bool bAiming);
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void MultiCastHit();
+
+	virtual void OnRep_ReplicatedMovement() override;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -51,8 +57,13 @@ protected:
 	void StopFire();
 
 	virtual void Jump() override;
-
+	
+	void CalculateAO_Pitch();
 	void AimOffset(float DeltaTime);
+
+	void SimProxiesTurn();
+
+	void PlayHitReactMontage();
 
 private:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta=(AllowPrivateAccess = "true"))
@@ -113,6 +124,21 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* FireWeaponMontage;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* HitReactMontage;
+
+	void HideCameraIfCharacterIsClose();
+	UPROPERTY(EditAnywhere)
+	float CameraThreshold = 200.f;
+
+	bool bRotateRootBone;
+	float TurnThreshold = 0.5f;
+	FRotator ProxyRotationLastFrame;
+	FRotator ProxyRotation;
+	float ProxyYaw;
+	float TimeSinceLastReplicatedMovement;
+	float CalculateSpeed();
 	
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
@@ -128,5 +154,6 @@ public:
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
+	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 	FVector GetHitTarget() const;
 };

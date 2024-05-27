@@ -50,6 +50,8 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		TurningInPlace = SwatCharacter->GetTurningInPlace();
 
+		bRotateRootBone = SwatCharacter->ShouldRotateRootBone();
+
 		// Yaw offset for strafing
 		FRotator AimRotation = SwatCharacter->GetBaseAimRotation();
 		FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(SwatCharacter->GetVelocity());
@@ -80,8 +82,9 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			{
 				bLocallyControlled = true;
 				FTransform RightHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("hand_r"), ERelativeTransformSpace::RTS_World);
-				RightHandRotation = UKismetMathLibrary::FindLookAtRotation(RightHandTransform.GetLocation(),
+				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(RightHandTransform.GetLocation(),
 					RightHandTransform.GetLocation() + (RightHandTransform.GetLocation() - SwatCharacter->GetHitTarget()));
+				RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaSeconds, 30.f);
 			}
 		}
 	}
