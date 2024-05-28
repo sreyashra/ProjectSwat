@@ -15,6 +15,7 @@ class PROJECTSWAT_API ASwatPlayerController : public APlayerController
 
 public:
 	void SetHUDHealth(float Health, float MaxHealth);
+	void OnPossess(APawn* InPawn) override;
 
 protected:
 	virtual void BeginPlay() override;

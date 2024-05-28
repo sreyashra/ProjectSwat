@@ -39,10 +39,15 @@ public:
 	virtual void PostInitializeComponents() override;
 
 	void PlayFireMontage(bool bAiming);
-	
 
+	void PlayElimMontage();
+	
 	virtual void OnRep_ReplicatedMovement() override;
 
+	void Elim();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastElim();
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -131,6 +136,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* HitReactMontage;
 
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* ElimMontage;
+
 	void HideCameraIfCharacterIsClose();
 	UPROPERTY(EditAnywhere)
 	float CameraThreshold = 200.f;
@@ -156,6 +164,12 @@ private:
 	void OnRep_Health();
 
 	ASwatPlayerController* SwatPlayerController;
+
+	bool bElimmed = false;
+	FTimerHandle ElimTimer;
+	void ElimTimerFinished();
+	UPROPERTY(EditDefaultsOnly)
+	float ElimDelay = 3.f;
 	
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
@@ -172,5 +186,9 @@ public:
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
+	FORCEINLINE bool IsElimmed() const { return bElimmed; }
+	FORCEINLINE float GetHealth() const { return Health; }
+	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	
 	FVector GetHitTarget() const;
 };

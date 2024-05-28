@@ -52,6 +52,8 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		bRotateRootBone = SwatCharacter->ShouldRotateRootBone();
 
+		bElimmed = SwatCharacter->IsElimmed();
+
 		// Yaw offset for strafing
 		FRotator AimRotation = SwatCharacter->GetBaseAimRotation();
 		FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(SwatCharacter->GetVelocity());

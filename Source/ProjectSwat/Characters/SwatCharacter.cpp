@@ -17,6 +17,7 @@
 #include "ProjectSwat/SwatComponents/CombatComponent.h"
 #include "ProjectSwat/Weapons/Weapon.h"
 #include "ProjectSwat/ProjectSwat.h"
+#include "ProjectSwat/GameModes/SwatGameMode.h"
 #include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
 
 DEFINE_LOG_CATEGORY(LogSwatCharacter);
@@ -24,6 +25,7 @@ DEFINE_LOG_CATEGORY(LogSwatCharacter);
 ASwatCharacter::ASwatCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
@@ -73,6 +75,41 @@ void ASwatCharacter::OnRep_ReplicatedMovement()
 
 	SimProxiesTurn();
 	TimeSinceLastReplicatedMovement = 0.f;
+}
+
+void ASwatCharacter::Elim()
+{
+	if (Combat && Combat->EquippedWeapon)
+	{
+		Combat->EquippedWeapon->Dropped();
+	}
+	MulticastElim();
+	GetWorldTimerManager().SetTimer(ElimTimer, this, &ASwatCharacter::ElimTimerFinished, ElimDelay);
+}
+
+void ASwatCharacter::MulticastElim_Implementation()
+{
+	bElimmed = true;
+	PlayElimMontage();
+
+	//Disable character movement
+	GetCharacterMovement()->DisableMovement();
+	GetCharacterMovement()->StopMovementImmediately();
+	if (SwatPlayerController)
+	{
+		DisableInput(SwatPlayerController);
+	}
+	// Disable Collision
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void ASwatCharacter::ElimTimerFinished()
+{
+	if (ASwatGameMode* SwatGameMode = GetWorld()->GetAuthGameMode<ASwatGameMode>())
+	{
+		SwatGameMode->RequestRespawn(this, GetController());
+	}
 }
 
 void ASwatCharacter::BeginPlay()
@@ -167,6 +204,16 @@ void ASwatCharacter::PlayFireMontage(bool bAiming)
 	}
 }
 
+void ASwatCharacter::PlayElimMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && ElimMontage)
+	{
+		AnimInstance->Montage_Play(ElimMontage);
+	}
+}
+
 void ASwatCharacter::PlayHitReactMontage()
 {
 	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
@@ -187,6 +234,17 @@ void ASwatCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDa
 	Health = FMath::Clamp(Health-Damage, 0.f, MaxHealth);
 	UpdateHUDHealth();
 	PlayHitReactMontage();
+
+	if (Health == 0.f)
+	{
+		if (ASwatGameMode* SwatGameMode = GetWorld()->GetAuthGameMode<ASwatGameMode>())
+		{
+			SwatPlayerController = SwatPlayerController == nullptr ? Cast<ASwatPlayerController>(GetController()) : SwatPlayerController;
+			ASwatPlayerController* AttackerController = Cast<ASwatPlayerController>((InstigatorController));
+			SwatGameMode->PlayerEliminated(this, SwatPlayerController, AttackerController);
+		}
+	}
+	
 }
 
 void ASwatCharacter::Move(const FInputActionValue& Value)
@@ -270,7 +328,6 @@ void ASwatCharacter::Fire()
 	if (Combat)
 	{
 		Combat->FirePressed(true);
-		UE_LOG(LogSwatCharacter, Display, TEXT("Fire function called"));
 	}
 }
 
@@ -279,7 +336,6 @@ void ASwatCharacter::StopFire()
 	if (Combat)
 	{
 		Combat->FirePressed(false); // change this to false
-		UE_LOG(LogSwatCharacter, Display, TEXT("StopFire function called"));
 	}
 }
 
@@ -355,8 +411,6 @@ void ASwatCharacter::SimProxiesTurn()
 	ProxyRotationLastFrame = ProxyRotation;
 	ProxyRotation = GetActorRotation();
 	ProxyYaw = UKismetMathLibrary::NormalizedDeltaRotator(ProxyRotation, ProxyRotationLastFrame).Yaw;
-
-	UE_LOG(LogSwatCharacter, Warning, TEXT("ProxyYaw: %f"), ProxyYaw);
 	
 	if (FMath::Abs(ProxyYaw) > TurnThreshold)
 	{

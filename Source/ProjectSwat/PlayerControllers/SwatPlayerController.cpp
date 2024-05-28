@@ -4,6 +4,7 @@
 #include "SwatPlayerController.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "ProjectSwat/Characters/SwatCharacter.h"
 #include "ProjectSwat/HUD/SwatHUD.h"
 #include "ProjectSwat/HUD/CharacterOverlay.h"
 
@@ -12,6 +13,16 @@ void ASwatPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 	SwatHUD = Cast<ASwatHUD>(GetHUD());
+}
+
+void ASwatPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (ASwatCharacter* SwatCharacter = Cast<ASwatCharacter>(InPawn))
+	{
+		SetHUDHealth(SwatCharacter->GetHealth(), SwatCharacter->GetMaxHealth());
+	}
 }
 
 void ASwatPlayerController::SetHUDHealth(float Health, float MaxHealth)
