@@ -19,6 +19,7 @@ class UWidgetComponent;
 class AWeapon;
 class UAnimMontage;
 class ASwatPlayerController;
+class ASwatPlayerState;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSwatCharacter, Log, All);
 
@@ -72,6 +73,9 @@ protected:
 	UFUNCTION()
 	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
 	void UpdateHUDHealth();
+
+	//Poll for any relevent class and initialize HUD
+	void PollInit();
 
 private:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta=(AllowPrivateAccess = "true"))
@@ -170,6 +174,8 @@ private:
 	void ElimTimerFinished();
 	UPROPERTY(EditDefaultsOnly)
 	float ElimDelay = 3.f;
+
+	ASwatPlayerState* SwatPlayerState;
 	
 public:
 	void SetOverlappingWeapon(AWeapon* Weapon);

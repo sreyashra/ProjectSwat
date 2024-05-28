@@ -6,10 +6,19 @@
 #include "Kismet/GameplayStatics.h"
 #include "ProjectSwat/Characters/SwatCharacter.h"
 #include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
+#include "ProjectSwat/PlayerStates/SwatPlayerState.h"
 
 void ASwatGameMode::PlayerEliminated(ASwatCharacter* ElimmedCharacter, ASwatPlayerController* VictimController,
-	ASwatPlayerController* AttackerController)
+                                     ASwatPlayerController* AttackerController)
 {
+	ASwatPlayerState* AttackerPlayerState = AttackerController ? Cast<ASwatPlayerState>(AttackerController->PlayerState) : nullptr;
+	ASwatPlayerState* VictimPlayerState = VictimController ? Cast<ASwatPlayerState>(VictimController->PlayerState) : nullptr;
+
+	if (AttackerPlayerState && AttackerPlayerState != VictimPlayerState)
+	{
+		AttackerPlayerState->AddToScore(1.f);
+	}
+	
 	if (ElimmedCharacter)
 	{
 		ElimmedCharacter->Elim();

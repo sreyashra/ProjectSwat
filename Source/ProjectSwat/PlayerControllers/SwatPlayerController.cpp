@@ -37,3 +37,14 @@ void ASwatPlayerController::SetHUDHealth(float Health, float MaxHealth)
 		SwatHUD->CharacterOverlay->HealthText->SetText(FText::FromString(HealthText));
 	}
 }
+
+void ASwatPlayerController::SetHUDScore(float Score)
+{
+	SwatHUD = SwatHUD == nullptr ? Cast<ASwatHUD>(GetHUD()) : SwatHUD;
+
+	if (bool bHUDValid = SwatHUD && SwatHUD->CharacterOverlay && SwatHUD->CharacterOverlay->ScoreAmount)
+	{
+		FString ScoreText = FString::Printf(TEXT("%d"), FMath::FloorToInt(Score));
+		SwatHUD->CharacterOverlay->ScoreAmount->SetText(FText::FromString(ScoreText));
+	}
+}

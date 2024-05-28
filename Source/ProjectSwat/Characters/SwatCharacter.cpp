@@ -19,6 +19,7 @@
 #include "ProjectSwat/ProjectSwat.h"
 #include "ProjectSwat/GameModes/SwatGameMode.h"
 #include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
+#include "ProjectSwat/PlayerStates/SwatPlayerState.h"
 
 DEFINE_LOG_CATEGORY(LogSwatCharacter);
 
@@ -143,6 +144,7 @@ void ASwatCharacter::Tick(float DeltaTime)
 	}
 	
 	HideCameraIfCharacterIsClose();
+	PollInit();
 }
 
 void ASwatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -494,6 +496,18 @@ void ASwatCharacter::UpdateHUDHealth()
 	if (SwatPlayerController)
 	{
 		SwatPlayerController->SetHUDHealth(Health, MaxHealth);
+	}
+}
+
+void ASwatCharacter::PollInit()
+{
+	if (SwatPlayerState == nullptr)
+	{
+		SwatPlayerState = GetPlayerState<ASwatPlayerState>();
+		if (SwatPlayerState)
+		{
+			SwatPlayerState->AddToScore(0.f);
+		}
 	}
 }
 
