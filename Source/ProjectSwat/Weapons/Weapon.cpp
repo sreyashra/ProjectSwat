@@ -8,6 +8,7 @@
 #include "ProjectSwat/Characters/SwatCharacter.h"
 #include "Casing.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
 
 // Sets default values
 AWeapon::AWeapon()
@@ -59,6 +60,36 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState);
+	DOREPLIFETIME(AWeapon, Ammo);
+}
+
+void AWeapon::OnRep_Owner()
+{
+	Super::OnRep_Owner();
+
+	if (Owner == nullptr)
+	{
+		SwatOwnerCharacter = nullptr;
+		SwatOwnerController = nullptr;
+	}
+	else
+	{
+		SetHUDAmmo();
+	}
+}
+
+void AWeapon::SetHUDAmmo()
+{
+	SwatOwnerCharacter = SwatOwnerCharacter == nullptr ? Cast<ASwatCharacter>(GetOwner()) : SwatOwnerCharacter;
+	if (SwatOwnerCharacter)
+	{
+		SwatOwnerController = SwatOwnerController == nullptr ? Cast<ASwatPlayerController>(SwatOwnerCharacter->Controller) : SwatOwnerController;
+		if (SwatOwnerController)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Setting HUD Ammo for %s to %d"), *GetNameSafe(SwatOwnerCharacter), Ammo);
+			SwatOwnerController->SetHUDWeaponAmmo(Ammo);
+		}
+	}
 }
 
 void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -125,6 +156,7 @@ void AWeapon::FireWeapon(const FVector& HitTarget)
 			}
 		}
 	}
+	SpendRound();
 }
 
 void AWeapon::Dropped()
@@ -133,6 +165,8 @@ void AWeapon::Dropped()
 	FDetachmentTransformRules DetachmentTransformRules(EDetachmentRule::KeepWorld, true);
 	WeaponMesh->DetachFromComponent(DetachmentTransformRules);
 	SetOwner(nullptr);
+	SwatOwnerCharacter = nullptr;
+	SwatOwnerController = nullptr;
 }
 
 void AWeapon::OnRep_WeaponState()
@@ -151,6 +185,23 @@ void AWeapon::OnRep_WeaponState()
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	}
+}
+
+void AWeapon::OnRep_Ammo()
+{
+	UE_LOG(LogTemp, Log, TEXT("Ammo replicated: %d"), Ammo);
+	SetHUDAmmo();
+}
+
+void AWeapon::SpendRound()
+{
+	Ammo = FMath::Clamp(Ammo - 1, 0, MagCapacity);
+	SetHUDAmmo();
+}
+
+bool AWeapon::IsEmpty()
+{
+	return Ammo <= 0;
 }
 
 void AWeapon::ShowPickupWidget(bool bShowWidget)

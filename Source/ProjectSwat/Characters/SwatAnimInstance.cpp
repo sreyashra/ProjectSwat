@@ -86,7 +86,9 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 				FTransform RightHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("hand_r"), ERelativeTransformSpace::RTS_World);
 				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(RightHandTransform.GetLocation(),
 					RightHandTransform.GetLocation() + (RightHandTransform.GetLocation() - SwatCharacter->GetHitTarget()));
-				RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaSeconds, 30.f);
+				FRotator WeaponRotationOffset(80.0f, 6.f, 90.f); // Adjust the values as needed
+				FRotator TargetRotation = LookAtRotation + WeaponRotationOffset;
+				RightHandRotation = FMath::RInterpTo(RightHandRotation, TargetRotation, DeltaSeconds, 30.f);
 			}
 		}
 	}

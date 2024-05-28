@@ -90,6 +90,10 @@ void ASwatCharacter::Elim()
 
 void ASwatCharacter::MulticastElim_Implementation()
 {
+	if (SwatPlayerController)
+	{
+		SwatPlayerController->SetHUDWeaponAmmo(0);
+	}
 	bElimmed = true;
 	PlayElimMontage();
 

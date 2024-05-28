@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Weapon.generated.h"
 
+class ASwatPlayerController;
+
 UENUM(BlueprintType)
 enum class EWeaponState : uint8
 {
@@ -19,6 +21,7 @@ class USphereComponent;
 class UWidgetComponent;
 class UAnimationAsset;
 class UTexture2D;
+class ASwatCharacter;
 
 UCLASS()
 class PROJECTSWAT_API AWeapon : public AActor
@@ -31,6 +34,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void OnRep_Owner() override;
+	void SetHUDAmmo();
 	
 	void ShowPickupWidget(bool bShowWidget);
 	
@@ -108,10 +114,27 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ACasing> CasingClass;
+
+	UPROPERTY(EditAnywhere, Category=Ammo, ReplicatedUsing=OnRep_Ammo)
+	int32 Ammo;
+
+	UPROPERTY(EditAnywhere, Category=Ammo)
+	int32 MagCapacity;
+
+	UFUNCTION()
+	void OnRep_Ammo();
+
+	void SpendRound();
+
+	UPROPERTY()
+	ASwatCharacter* SwatOwnerCharacter;
+	UPROPERTY()
+	ASwatPlayerController* SwatOwnerController;
 	
 public:
 	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
+	bool IsEmpty();
 };

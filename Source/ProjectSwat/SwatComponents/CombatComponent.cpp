@@ -190,7 +190,7 @@ void UCombatComponent::OnRep_EquippedWeapon()
 
 void UCombatComponent::Fire()
 {
-	if (bCanFire && EquippedWeapon)
+	if (CanFire())
 	{
 		bCanFire = false;
 		ServerFire(HitTarget);
@@ -276,9 +276,10 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
-	if (Character == nullptr || WeaponToEquip  == nullptr)
+	if (Character == nullptr || WeaponToEquip  == nullptr) return;
+	if (EquippedWeapon)
 	{
-		return;
+		EquippedWeapon->Dropped();
 	}
 
 	EquippedWeapon = WeaponToEquip;
@@ -290,8 +291,14 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	}
 	
 	EquippedWeapon->SetOwner(Character);
+	EquippedWeapon->SetHUDAmmo();
 
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
 }
 
+bool UCombatComponent::CanFire()
+{
+	if (EquippedWeapon == nullptr) return false;
+	return !EquippedWeapon->IsEmpty() || !bCanFire;
+}
