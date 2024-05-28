@@ -67,7 +67,17 @@ void ASwatPlayerController::SetHUDWeaponAmmo(int32 Ammo)
 	if (bool bHUDValid = SwatHUD && SwatHUD->CharacterOverlay && SwatHUD->CharacterOverlay->WeaponAmmoAmount)
 	{
 		FString AmmoText = FString::Printf(TEXT("%d"), Ammo);
-		UE_LOG(LogTemp, Log, TEXT("Setting HUD Ammo to %s"), *AmmoText);
 		SwatHUD->CharacterOverlay->WeaponAmmoAmount->SetText(FText::FromString(AmmoText));
+	}
+}
+
+void ASwatPlayerController::SetHUDCarriedAmmo(int32 Ammo)
+{
+	SwatHUD = SwatHUD == nullptr ? Cast<ASwatHUD>(GetHUD()) : SwatHUD;
+
+	if (bool bHUDValid = SwatHUD && SwatHUD->CharacterOverlay && SwatHUD->CharacterOverlay->CarriedAmmoAmount)
+	{
+		FString AmmoText = FString::Printf(TEXT("%d"), Ammo);
+		SwatHUD->CharacterOverlay->CarriedAmmoAmount->SetText(FText::FromString(AmmoText));
 	}
 }
