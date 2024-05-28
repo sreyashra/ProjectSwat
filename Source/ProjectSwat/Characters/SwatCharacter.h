@@ -167,6 +167,7 @@ private:
 	UFUNCTION()
 	void OnRep_Health();
 
+	UPROPERTY()
 	ASwatPlayerController* SwatPlayerController;
 
 	bool bElimmed = false;
@@ -175,6 +176,7 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	float ElimDelay = 3.f;
 
+	UPROPERTY()
 	ASwatPlayerState* SwatPlayerState;
 	
 public:

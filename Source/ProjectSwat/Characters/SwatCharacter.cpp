@@ -507,6 +507,7 @@ void ASwatCharacter::PollInit()
 		if (SwatPlayerState)
 		{
 			SwatPlayerState->AddToScore(0.f);
+			SwatPlayerState->AddToDefeats(0);
 		}
 	}
 }

@@ -18,6 +18,11 @@ void ASwatGameMode::PlayerEliminated(ASwatCharacter* ElimmedCharacter, ASwatPlay
 	{
 		AttackerPlayerState->AddToScore(1.f);
 	}
+
+	if (VictimPlayerState)
+	{
+		VictimPlayerState->AddToDefeats(1);
+	}
 	
 	if (ElimmedCharacter)
 	{
