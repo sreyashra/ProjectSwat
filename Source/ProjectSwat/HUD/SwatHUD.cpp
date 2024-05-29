@@ -2,15 +2,15 @@
 
 
 #include "SwatHUD.h"
-//#include "Blueprint/UserWidget.h"
+#include "Blueprint/UserWidget.h"
 #include "CharacterOverlay.h"
+#include "Announcement.h"
 #include "GameFramework/PlayerController.h"
 
 void ASwatHUD::BeginPlay()
 {
 	Super::BeginPlay();
-
-	AddCharacterOverlay();
+	
 }
 
 void ASwatHUD::AddCharacterOverlay()
@@ -21,6 +21,17 @@ void ASwatHUD::AddCharacterOverlay()
 	{
 		CharacterOverlay = CreateWidget<UCharacterOverlay>(PlayerController, CharacterOverlayClass);
 		CharacterOverlay->AddToViewport();
+	}
+}
+
+void ASwatHUD::AddAnnouncement()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+
+	if (PlayerController && AnnouncementClass)
+	{
+		Announcement = CreateWidget<UAnnouncement>(PlayerController, AnnouncementClass);
+		Announcement->AddToViewport();
 	}
 }
 

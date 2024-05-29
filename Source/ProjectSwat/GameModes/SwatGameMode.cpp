@@ -8,6 +8,46 @@
 #include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
 #include "ProjectSwat/PlayerStates/SwatPlayerState.h"
 
+ASwatGameMode::ASwatGameMode()
+{
+	bDelayedStart = true;
+}
+
+void ASwatGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	LevelStartingTime = GetWorld()->GetTimeSeconds();
+}
+
+void ASwatGameMode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (MatchState == MatchState::WaitingToStart)
+	{
+		CountdownTime = WarmupTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
+		if (CountdownTime<= 0.f)
+		{
+			StartMatch();
+		}
+	}
+}
+
+void ASwatGameMode::OnMatchStateSet()
+{
+	Super::OnMatchStateSet();
+
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		ASwatPlayerController* SwatPlayerController = Cast<ASwatPlayerController>(*Iterator);
+		if (SwatPlayerController)
+		{
+			SwatPlayerController->OnMatchStateSet(MatchState);
+		}
+	}
+}
+
 void ASwatGameMode::PlayerEliminated(ASwatCharacter* ElimmedCharacter, ASwatPlayerController* VictimController,
                                      ASwatPlayerController* AttackerController)
 {
