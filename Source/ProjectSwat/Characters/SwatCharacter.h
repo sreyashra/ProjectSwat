@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "ProjectSwat/ProjectSwatTypes/TurningInPlace.h"
 #include "ProjectSwat/Interfaces/InteractWithCrosshairsInterface.h"
+#include "ProjectSwat/ProjectSwatTypes/CombatState.h"
 #include "SwatCharacter.generated.h"
 
 class UCombatComponent;
@@ -41,6 +42,8 @@ public:
 
 	void PlayFireMontage(bool bAiming);
 
+	void PlayReloadMontage();
+
 	void PlayElimMontage();
 	
 	virtual void OnRep_ReplicatedMovement() override;
@@ -60,6 +63,7 @@ protected:
 	void StopAim();
 	void Fire();
 	void StopFire();
+	void Reload();
 
 	virtual void Jump() override;
 	
@@ -110,6 +114,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* FireAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
+	UInputAction* ReloadAction;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	UWidgetComponent* OverheadWidget;
@@ -120,7 +127,7 @@ private:
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	UCombatComponent* Combat;
 
 	UFUNCTION(Server, Reliable)
@@ -134,6 +141,9 @@ private:
 	ETurningInPlace TurningInPlace;
 	void TurnInPlace(float DeltaTime);
 
+	/*
+	 * Animation montages
+	 */
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* FireWeaponMontage;
 
@@ -142,6 +152,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* ElimMontage;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* ReloadMontage;
 
 	void HideCameraIfCharacterIsClose();
 	UPROPERTY(EditAnywhere)
@@ -199,4 +212,5 @@ public:
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	
 	FVector GetHitTarget() const;
+	ECombatState GetCombatState() const;
 };

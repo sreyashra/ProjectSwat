@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "WeaponTypes.h"
 #include "Weapon.generated.h"
 
 class ASwatPlayerController;
@@ -22,6 +23,7 @@ class UWidgetComponent;
 class UAnimationAsset;
 class UTexture2D;
 class ASwatCharacter;
+class USoundCue;
 
 UCLASS()
 class PROJECTSWAT_API AWeapon : public AActor
@@ -45,6 +47,8 @@ public:
 	virtual void FireWeapon(const FVector& HitTarget);
 
 	void Dropped();
+
+	void AddAmmo(int32 AmmoToAdd);
 
 	/*
 	 * Textures for weapon crosshairs
@@ -81,6 +85,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category=Combat)
 	bool bAutomatic = true;
+
+	UPROPERTY(EditAnywhere)
+	USoundCue* EquipSound;
 
 protected:
 	virtual void BeginPlay() override;
@@ -130,11 +137,17 @@ private:
 	ASwatCharacter* SwatOwnerCharacter;
 	UPROPERTY()
 	ASwatPlayerController* SwatOwnerController;
+
+	UPROPERTY(EditAnywhere)
+	EWeaponType WeaponType;
 	
 public:
 	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
+	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
+	FORCEINLINE int32 GetAmmo() const { return Ammo; }
+	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	bool IsEmpty();
 };

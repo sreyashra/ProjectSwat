@@ -20,6 +20,7 @@
 #include "ProjectSwat/GameModes/SwatGameMode.h"
 #include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
 #include "ProjectSwat/PlayerStates/SwatPlayerState.h"
+#include "ProjectSwat/Weapons/WeaponTypes.h"
 
 DEFINE_LOG_CATEGORY(LogSwatCharacter);
 
@@ -179,6 +180,8 @@ void ASwatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ASwatCharacter::Fire);
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ASwatCharacter::StopFire);
+
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ASwatCharacter::Reload);
 	}
 	else
 	{
@@ -206,6 +209,27 @@ void ASwatCharacter::PlayFireMontage(bool bAiming)
 	{
 		AnimInstance->Montage_Play(FireWeaponMontage);
 		FName SectionName = FName("RifleAim");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void ASwatCharacter::PlayReloadMontage()
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && ReloadMontage)
+	{
+		AnimInstance->Montage_Play(ReloadMontage);
+		FName SectionName ;
+		switch (Combat->EquippedWeapon->GetWeaponType())
+		{
+		case EWeaponType::EWT_AssaultRifle:
+			SectionName = FName("Rifle");
+			break;
+		}
+		
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
@@ -342,6 +366,14 @@ void ASwatCharacter::StopFire()
 	if (Combat)
 	{
 		Combat->FirePressed(false); // change this to false
+	}
+}
+
+void ASwatCharacter::Reload()
+{
+	if (Combat)
+	{
+		Combat->Reload();
 	}
 }
 
@@ -567,4 +599,11 @@ FVector ASwatCharacter::GetHitTarget() const
 {
 	if (Combat == nullptr) return FVector();
 	return Combat->HitTarget;
+}
+
+ECombatState ASwatCharacter::GetCombatState() const
+{
+	if (Combat == nullptr) return ECombatState::ECS_MAX;
+
+	return Combat->CombatState;
 }

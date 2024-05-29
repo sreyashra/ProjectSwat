@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "ProjectSwat/Weapons/Weapon.h"
+#include "ProjectSwat/ProjectSwatTypes/CombatState.h"
 
 DEFINE_LOG_CATEGORY(LogSwatAnimInstance);
 
@@ -91,5 +92,8 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 				RightHandRotation = FMath::RInterpTo(RightHandRotation, TargetRotation, DeltaSeconds, 30.f);
 			}
 		}
+		bUseFABRIK = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading;
+		bUseAimOffsets = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading;
+		bTransformRightHand = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading;
 	}
 }
