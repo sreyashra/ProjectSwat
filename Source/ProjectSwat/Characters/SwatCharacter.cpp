@@ -63,61 +63,6 @@ ASwatCharacter::ASwatCharacter()
 	
 }
 
-void ASwatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME_CONDITION(ASwatCharacter, OverlappingWeapon, COND_OwnerOnly);
-	DOREPLIFETIME(ASwatCharacter, Health);
-}
-
-void ASwatCharacter::OnRep_ReplicatedMovement()
-{
-	Super::OnRep_ReplicatedMovement();
-
-	SimProxiesTurn();
-	TimeSinceLastReplicatedMovement = 0.f;
-}
-
-void ASwatCharacter::Elim()
-{
-	if (Combat && Combat->EquippedWeapon)
-	{
-		Combat->EquippedWeapon->Dropped();
-	}
-	MulticastElim();
-	GetWorldTimerManager().SetTimer(ElimTimer, this, &ASwatCharacter::ElimTimerFinished, ElimDelay);
-}
-
-void ASwatCharacter::MulticastElim_Implementation()
-{
-	if (SwatPlayerController)
-	{
-		SwatPlayerController->SetHUDWeaponAmmo(0);
-	}
-	bElimmed = true;
-	PlayElimMontage();
-
-	//Disable character movement
-	GetCharacterMovement()->DisableMovement();
-	GetCharacterMovement()->StopMovementImmediately();
-	if (SwatPlayerController)
-	{
-		DisableInput(SwatPlayerController);
-	}
-	// Disable Collision
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-}
-
-void ASwatCharacter::ElimTimerFinished()
-{
-	if (ASwatGameMode* SwatGameMode = GetWorld()->GetAuthGameMode<ASwatGameMode>())
-	{
-		SwatGameMode->RequestRespawn(this, GetController());
-	}
-}
-
 void ASwatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -199,84 +144,23 @@ void ASwatCharacter::PostInitializeComponents()
 	}
 }
 
-void ASwatCharacter::PlayFireMontage(bool bAiming)
+void ASwatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-	if (AnimInstance && FireWeaponMontage)
-	{
-		AnimInstance->Montage_Play(FireWeaponMontage);
-		FName SectionName = FName("RifleAim");
-		AnimInstance->Montage_JumpToSection(SectionName);
-	}
+	DOREPLIFETIME_CONDITION(ASwatCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(ASwatCharacter, Health);
 }
 
-void ASwatCharacter::PlayReloadMontage()
+void ASwatCharacter::OnRep_ReplicatedMovement()
 {
-	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	Super::OnRep_ReplicatedMovement();
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-	if (AnimInstance && ReloadMontage)
-	{
-		AnimInstance->Montage_Play(ReloadMontage);
-		FName SectionName ;
-		switch (Combat->EquippedWeapon->GetWeaponType())
-		{
-		case EWeaponType::EWT_AssaultRifle:
-			SectionName = FName("Rifle");
-			break;
-		}
-		
-		AnimInstance->Montage_JumpToSection(SectionName);
-	}
+	SimProxiesTurn();
+	TimeSinceLastReplicatedMovement = 0.f;
 }
 
-void ASwatCharacter::PlayElimMontage()
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-	if (AnimInstance && ElimMontage)
-	{
-		AnimInstance->Montage_Play(ElimMontage);
-	}
-}
-
-void ASwatCharacter::PlayHitReactMontage()
-{
-	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
-
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-	if (AnimInstance && HitReactMontage)
-	{
-		AnimInstance->Montage_Play(HitReactMontage);
-		FName SectionName("FromFront");
-		AnimInstance->Montage_JumpToSection(SectionName);
-	}
-}
-
-void ASwatCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
-	AController* InstigatorController, AActor* DamageCauser)
-{
-	Health = FMath::Clamp(Health-Damage, 0.f, MaxHealth);
-	UpdateHUDHealth();
-	PlayHitReactMontage();
-
-	if (Health == 0.f)
-	{
-		if (ASwatGameMode* SwatGameMode = GetWorld()->GetAuthGameMode<ASwatGameMode>())
-		{
-			SwatPlayerController = SwatPlayerController == nullptr ? Cast<ASwatPlayerController>(GetController()) : SwatPlayerController;
-			ASwatPlayerController* AttackerController = Cast<ASwatPlayerController>((InstigatorController));
-			SwatGameMode->PlayerEliminated(this, SwatPlayerController, AttackerController);
-		}
-	}
-	
-}
-
+// Input Actions
 void ASwatCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -302,6 +186,18 @@ void ASwatCharacter::Look(const FInputActionValue& Value)
 	{
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void ASwatCharacter::Jump()
+{
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Super::Jump();
 	}
 }
 
@@ -377,18 +273,7 @@ void ASwatCharacter::Reload()
 	}
 }
 
-void ASwatCharacter::Jump()
-{
-	if (bIsCrouched)
-	{
-		UnCrouch();
-	}
-	else
-	{
-		Super::Jump();
-	}
-}
-
+// Aiming and Rotation
 void ASwatCharacter::CalculateAO_Pitch()
 {
 	AO_Pitch = GetBaseAimRotation().Pitch;
@@ -491,39 +376,24 @@ void ASwatCharacter::TurnInPlace(float DeltaTime)
 	}
 }
 
-void ASwatCharacter::HideCameraIfCharacterIsClose()
+// Damage handling and elimination
+void ASwatCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatorController, AActor* DamageCauser)
 {
-	if (!IsLocallyControlled()) return;
-
-	if ((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
-	{
-		GetMesh()->SetVisibility(false);
-		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
-		{
-			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
-		}
-	}
-	else
-	{
-		GetMesh()->SetVisibility(true);
-		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
-		{
-			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
-		}
-	}
-}
-
-float ASwatCharacter::CalculateSpeed()
-{
-	FVector Velocity = GetVelocity();
-	Velocity.Z = 0.f;
-	return Velocity.Size();
-}
-
-void ASwatCharacter::OnRep_Health()
-{
-	PlayHitReactMontage();
+	Health = FMath::Clamp(Health-Damage, 0.f, MaxHealth);
 	UpdateHUDHealth();
+	PlayHitReactMontage();
+
+	if (Health == 0.f)
+	{
+		if (ASwatGameMode* SwatGameMode = GetWorld()->GetAuthGameMode<ASwatGameMode>())
+		{
+			SwatPlayerController = SwatPlayerController == nullptr ? Cast<ASwatPlayerController>(GetController()) : SwatPlayerController;
+			ASwatPlayerController* AttackerController = Cast<ASwatPlayerController>((InstigatorController));
+			SwatGameMode->PlayerEliminated(this, SwatPlayerController, AttackerController);
+		}
+	}
+	
 }
 
 void ASwatCharacter::UpdateHUDHealth()
@@ -535,19 +405,52 @@ void ASwatCharacter::UpdateHUDHealth()
 	}
 }
 
-void ASwatCharacter::PollInit()
+void ASwatCharacter::OnRep_Health()
 {
-	if (SwatPlayerState == nullptr)
+	PlayHitReactMontage();
+	UpdateHUDHealth();
+}
+
+void ASwatCharacter::Elim()
+{
+	if (Combat && Combat->EquippedWeapon)
 	{
-		SwatPlayerState = GetPlayerState<ASwatPlayerState>();
-		if (SwatPlayerState)
-		{
-			SwatPlayerState->AddToScore(0.f);
-			SwatPlayerState->AddToDefeats(0);
-		}
+		Combat->EquippedWeapon->Dropped();
+	}
+	MulticastElim();
+	GetWorldTimerManager().SetTimer(ElimTimer, this, &ASwatCharacter::ElimTimerFinished, ElimDelay);
+}
+
+void ASwatCharacter::MulticastElim_Implementation()
+{
+	if (SwatPlayerController)
+	{
+		SwatPlayerController->SetHUDWeaponAmmo(0);
+	}
+	bElimmed = true;
+	PlayElimMontage();
+
+	//Disable character movement
+	GetCharacterMovement()->DisableMovement();
+	GetCharacterMovement()->StopMovementImmediately();
+	if (SwatPlayerController)
+	{
+		DisableInput(SwatPlayerController);
+	}
+	// Disable Collision
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void ASwatCharacter::ElimTimerFinished()
+{
+	if (ASwatGameMode* SwatGameMode = GetWorld()->GetAuthGameMode<ASwatGameMode>())
+	{
+		SwatGameMode->RequestRespawn(this, GetController());
 	}
 }
 
+// Weapon Handling
 void ASwatCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
 	if (OverlappingWeapon)
@@ -593,6 +496,109 @@ AWeapon* ASwatCharacter::GetEquippedWeapon()
 	if (Combat == nullptr) return nullptr;
 
 	return Combat->EquippedWeapon;
+}
+
+// Animation Montages
+void ASwatCharacter::PlayFireMontage(bool bAiming)
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && FireWeaponMontage)
+	{
+		AnimInstance->Montage_Play(FireWeaponMontage);
+		FName SectionName = FName("RifleAim");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void ASwatCharacter::PlayReloadMontage()
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && ReloadMontage)
+	{
+		AnimInstance->Montage_Play(ReloadMontage);
+		FName SectionName ;
+		switch (Combat->EquippedWeapon->GetWeaponType())
+		{
+		case EWeaponType::EWT_AssaultRifle:
+			SectionName = FName("Rifle");
+			break;
+		}
+		
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void ASwatCharacter::PlayElimMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && ElimMontage)
+	{
+		AnimInstance->Montage_Play(ElimMontage);
+	}
+}
+
+void ASwatCharacter::PlayHitReactMontage()
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && HitReactMontage)
+	{
+		AnimInstance->Montage_Play(HitReactMontage);
+		FName SectionName("FromFront");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+// Utility Functions
+void ASwatCharacter::HideCameraIfCharacterIsClose()
+{
+	if (!IsLocallyControlled()) return;
+
+	if ((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
+	{
+		GetMesh()->SetVisibility(false);
+		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
+		{
+			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
+		}
+	}
+	else
+	{
+		GetMesh()->SetVisibility(true);
+		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
+		{
+			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
+		}
+	}
+}
+
+float ASwatCharacter::CalculateSpeed()
+{
+	FVector Velocity = GetVelocity();
+	Velocity.Z = 0.f;
+	return Velocity.Size();
+}
+
+void ASwatCharacter::PollInit()
+{
+	if (SwatPlayerState == nullptr)
+	{
+		SwatPlayerState = GetPlayerState<ASwatPlayerState>();
+		if (SwatPlayerState)
+		{
+			SwatPlayerState->AddToScore(0.f);
+			SwatPlayerState->AddToDefeats(0);
+		}
+	}
 }
 
 FVector ASwatCharacter::GetHitTarget() const

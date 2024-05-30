@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// SwatCharacter.h
 
 #pragma once
 
@@ -9,6 +9,7 @@
 #include "ProjectSwat/ProjectSwatTypes/CombatState.h"
 #include "SwatCharacter.generated.h"
 
+// Forward declarations
 class UCombatComponent;
 class USpringArmComponent;
 class UCameraComponent;
@@ -31,32 +32,44 @@ class PROJECTSWAT_API ASwatCharacter : public ACharacter, public IInteractWithCr
 
 public:
 	ASwatCharacter();
-	
+
+	// Tick function
 	virtual void Tick(float DeltaTime) override;
-	
+
+	// Input handling
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	// Replication
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	virtual void PostInitializeComponents() override;
-
-	void PlayFireMontage(bool bAiming);
-
-	void PlayReloadMontage();
-
-	void PlayElimMontage();
-	
 	virtual void OnRep_ReplicatedMovement() override;
 
+	// Initialization
+	virtual void PostInitializeComponents() override;
+
+	// Animation montages
+	void PlayFireMontage(bool bAiming);
+	void PlayReloadMontage();
+	void PlayElimMontage();
+	void PlayHitReactMontage();
+
+	// Elimination
 	void Elim();
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
-	
-protected:
-	virtual void BeginPlay() override;
 
+	// Damage handling
+	UFUNCTION()
+	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
+	void UpdateHUDHealth();
+
+protected:
+	// Initialization
+	virtual void BeginPlay() override;
+	
+	// Input actions
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void Jump() override;
 	void Equip();
 	void CrouchButtonPressed();
 	void Aim();
@@ -65,23 +78,17 @@ protected:
 	void StopFire();
 	void Reload();
 
-	virtual void Jump() override;
-	
+	// Aiming and rotation
 	void CalculateAO_Pitch();
 	void AimOffset(float DeltaTime);
-
 	void SimProxiesTurn();
+	void TurnInPlace(float DeltaTime);
 
-	void PlayHitReactMontage();
-
-	UFUNCTION()
-	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
-	void UpdateHUDHealth();
-
-	//Poll for any relevent class and initialize HUD
+	// HUD and initialization
 	void PollInit();
 
-private:	
+private:
+	// Components
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta=(AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
 
@@ -91,6 +98,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta=(AllowPrivateAccess = "true"))
 	UCharacterTrajectoryComponent* CharacterTrajectoryComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	UCombatComponent* Combat;
+
+	// Input
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
 	UInputMappingContext* PlayerMappingContext;
 
@@ -117,33 +128,30 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* ReloadAction;
-	
+
+	// Widgets
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	UWidgetComponent* OverheadWidget;
 
+	// Weapon
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	AWeapon* OverlappingWeapon;
 
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	UCombatComponent* Combat;
-
 	UFUNCTION(Server, Reliable)
 	void ServerEquip();
 
+	// Aiming and rotation
 	float AO_Yaw;
 	float InterpAO_Yaw;
 	float AO_Pitch;
 	FRotator StartingAimRotation;
 
 	ETurningInPlace TurningInPlace;
-	void TurnInPlace(float DeltaTime);
 
-	/*
-	 * Animation montages
-	 */
+	// Animation montages
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* FireWeaponMontage;
 
@@ -156,10 +164,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* ReloadMontage;
 
+	// Camera
 	void HideCameraIfCharacterIsClose();
 	UPROPERTY(EditAnywhere)
 	float CameraThreshold = 200.f;
 
+	// Rotation and movement
 	bool bRotateRootBone;
 	float TurnThreshold = 0.5f;
 	FRotator ProxyRotationLastFrame;
@@ -168,9 +178,7 @@ private:
 	float TimeSinceLastReplicatedMovement;
 	float CalculateSpeed();
 
-	/*
-	 * Player health
-	 */
+	// Health
 	UPROPERTY(EditAnywhere, Category=PlayerStats)
 	float MaxHealth = 100.f;
 
@@ -180,27 +188,28 @@ private:
 	UFUNCTION()
 	void OnRep_Health();
 
-	UPROPERTY()
-	ASwatPlayerController* SwatPlayerController;
-
+	// Elimination
 	bool bElimmed = false;
 	FTimerHandle ElimTimer;
 	void ElimTimerFinished();
 	UPROPERTY(EditDefaultsOnly)
 	float ElimDelay = 3.f;
 
+	// Player controller and state
+	UPROPERTY()
+	ASwatPlayerController* SwatPlayerController;
+
 	UPROPERTY()
 	ASwatPlayerState* SwatPlayerState;
-	
+
 public:
+	// Weapon
 	void SetOverlappingWeapon(AWeapon* Weapon);
-
 	bool IsWeaponEquipped();
-
 	bool IsAiming();
-
 	AWeapon* GetEquippedWeapon();
 
+	// Getters
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
@@ -210,7 +219,7 @@ public:
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FORCEINLINE float GetHealth() const { return Health; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
-	
+
 	FVector GetHitTarget() const;
 	ECombatState GetCombatState() const;
 };

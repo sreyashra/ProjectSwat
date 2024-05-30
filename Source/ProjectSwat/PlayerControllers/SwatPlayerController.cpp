@@ -5,8 +5,10 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "GameFramework/GameMode.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "ProjectSwat/Characters/SwatCharacter.h"
+#include "ProjectSwat/GameModes/SwatGameMode.h"
 #include "ProjectSwat/HUD/Announcement.h"
 #include "ProjectSwat/HUD/SwatHUD.h"
 #include "ProjectSwat/HUD/CharacterOverlay.h"
@@ -16,10 +18,7 @@ void ASwatPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 	SwatHUD = Cast<ASwatHUD>(GetHUD());
-	if (SwatHUD)
-	{
-		SwatHUD->AddAnnouncement();
-	}
+	ServerCheckMatchState();
 }
 
 void ASwatPlayerController::Tick(float DeltaSeconds)
@@ -65,13 +64,61 @@ void ASwatPlayerController::CheckTimeSync(float DeltaTime)
 	}
 }
 
+void ASwatPlayerController::ServerCheckMatchState_Implementation()
+{
+	if (ASwatGameMode* GameMode = Cast<ASwatGameMode>(UGameplayStatics::GetGameMode(this)))
+	{
+		WarmupTime = GameMode->WarmupTime;
+		MatchTime = GameMode->MatchTime;
+		CooldownTime = GameMode->CooldownTime;
+		LevelStartingTime = GameMode->LevelStartingTime;
+		MatchState = GameMode->GetMatchState();
+		ClientJoinMidgame(MatchState, WarmupTime, MatchTime, CooldownTime, LevelStartingTime);
+	}
+}
+
+void ASwatPlayerController::ClientJoinMidgame_Implementation(FName StateOfMatch, float Warmup, float Match, float Cooldown, float StartingTime)
+{
+	MatchState = StateOfMatch;
+	WarmupTime = Warmup;
+	MatchTime = Match;
+	CooldownTime = Cooldown;
+	LevelStartingTime = StartingTime;
+	OnMatchStateSet(MatchState);
+
+	if (SwatHUD && MatchState == MatchState::WaitingToStart)
+	{
+		SwatHUD->AddAnnouncement();
+	}
+}
+
 void ASwatPlayerController::SetHUDTime()
 {
-	uint32 SecondsLeft = FMath::CeilToInt(MatchTime - GetServerTime());
+	float TimeLeft = 0;
+	if (MatchState == MatchState::WaitingToStart) TimeLeft = WarmupTime - GetServerTime() + LevelStartingTime;
+	else if (MatchState == MatchState::InProgress) TimeLeft = WarmupTime + MatchTime - GetServerTime() + LevelStartingTime;
+	else if (MatchState == MatchState::Cooldown) TimeLeft = CooldownTime + WarmupTime + MatchTime - GetServerTime() + LevelStartingTime;
+	uint32 SecondsLeft = FMath::CeilToInt(TimeLeft);
 
+	/*if (HasAuthority())
+	{
+		SwatGameMode = SwatGameMode == nullptr ? Cast<ASwatGameMode>(UGameplayStatics::GetGameMode(this)) : SwatGameMode;
+		if (SwatGameMode)
+		{
+			SecondsLeft = FMath::CeilToInt(SwatGameMode->GetCountdownTime() + LevelStartingTime);
+		}
+	}*/
+	
 	if (CountdownInt != SecondsLeft)
 	{
-		SetHUDMatchCountdown(MatchTime - GetServerTime());
+		if (MatchState == MatchState::WaitingToStart || MatchState == MatchState::Cooldown)
+		{
+			SetHUDAnnouncementCountdown(TimeLeft);
+		}
+		if (MatchState == MatchState::InProgress)
+		{
+			SetHUDMatchCountdown(TimeLeft);
+		}
 	}
 	CountdownInt = SecondsLeft;
 }
@@ -165,10 +212,35 @@ void ASwatPlayerController::SetHUDMatchCountdown(float CountdownTime)
 
 	if (bool bHUDValid = SwatHUD && SwatHUD->CharacterOverlay && SwatHUD->CharacterOverlay->MatchCountdownText)
 	{
+		if (CooldownTime < 0)
+		{
+			SwatHUD->CharacterOverlay->MatchCountdownText->SetText(FText());
+			return;
+		}
+		
 		int32 Minutes = FMath::FloorToInt(CountdownTime/60.f);
 		int32 Seconds = CountdownTime - Minutes * 60;
 		FString CountdownText = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
 		SwatHUD->CharacterOverlay->MatchCountdownText->SetText(FText::FromString(CountdownText));
+	}
+}
+
+void ASwatPlayerController::SetHUDAnnouncementCountdown(float CountdownTime)
+{
+	SwatHUD = SwatHUD == nullptr ? Cast<ASwatHUD>(GetHUD()) : SwatHUD;
+
+	if (bool bHUDValid = SwatHUD && SwatHUD->Announcement && SwatHUD->Announcement->WarmupTime)
+	{
+		if (CountdownTime < 0)
+		{
+			SwatHUD->Announcement->WarmupTime->SetText(FText());
+			return;
+		}
+		
+		int32 Minutes = FMath::FloorToInt(CountdownTime/60.f);
+		int32 Seconds = CountdownTime - Minutes * 60;
+		FString CountdownText = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+		SwatHUD->Announcement->WarmupTime->SetText(FText::FromString(CountdownText));
 	}
 }
 
@@ -210,6 +282,10 @@ void ASwatPlayerController::OnMatchStateSet(FName State)
 	{
 		HandleMatchHasStarted();
 	}
+	else if (MatchState == MatchState::Cooldown)
+	{
+		HandleCooldown();
+	}
 }
 
 void ASwatPlayerController::OnRep_MatchState()
@@ -217,6 +293,10 @@ void ASwatPlayerController::OnRep_MatchState()
 	if (MatchState == MatchState::InProgress)
 	{
 		HandleMatchHasStarted();
+	}
+	else if (MatchState == MatchState::Cooldown)
+	{
+		HandleCooldown();
 	}
 }
 
@@ -229,6 +309,22 @@ void ASwatPlayerController::HandleMatchHasStarted()
 		if (SwatHUD->Announcement)
 		{
 			SwatHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+}
+
+void ASwatPlayerController::HandleCooldown()
+{
+	SwatHUD = SwatHUD == nullptr ? Cast<ASwatHUD>(GetHUD()) : SwatHUD;
+	if (SwatHUD)
+	{
+		SwatHUD->CharacterOverlay->RemoveFromParent();
+		if (SwatHUD->Announcement && SwatHUD->Announcement->AnnouncementText && SwatHUD->Announcement->InfoText)
+		{
+			SwatHUD->Announcement->SetVisibility(ESlateVisibility::Visible);
+			FString AnnouncementText("New Match starts in:");
+			SwatHUD->Announcement->AnnouncementText->SetText(FText::FromString(AnnouncementText));
+			SwatHUD->Announcement->InfoText->SetText(FText());
 		}
 	}
 }

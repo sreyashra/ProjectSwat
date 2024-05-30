@@ -8,6 +8,11 @@
 #include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
 #include "ProjectSwat/PlayerStates/SwatPlayerState.h"
 
+namespace MatchState
+{
+	const FName Cooldown = FName("Cooldown");
+}
+
 ASwatGameMode::ASwatGameMode()
 {
 	bDelayedStart = true;
@@ -32,6 +37,14 @@ void ASwatGameMode::Tick(float DeltaSeconds)
 			StartMatch();
 		}
 	}
+	else if (MatchState == MatchState::InProgress)
+	{
+		CountdownTime = WarmupTime + MatchTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
+		if (CountdownTime <= 0.f)
+		{
+			SetMatchState(MatchState::Cooldown);
+		}
+	}
 }
 
 void ASwatGameMode::OnMatchStateSet()
@@ -40,8 +53,7 @@ void ASwatGameMode::OnMatchStateSet()
 
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
-		ASwatPlayerController* SwatPlayerController = Cast<ASwatPlayerController>(*Iterator);
-		if (SwatPlayerController)
+		if (ASwatPlayerController* SwatPlayerController = Cast<ASwatPlayerController>(*Iterator))
 		{
 			SwatPlayerController->OnMatchStateSet(MatchState);
 		}
