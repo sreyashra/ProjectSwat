@@ -8,7 +8,7 @@ public class ProjectSwat : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "MotionTrajectory" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "MotionTrajectory", "Niagara"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

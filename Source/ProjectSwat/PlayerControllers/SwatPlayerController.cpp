@@ -308,7 +308,7 @@ void ASwatPlayerController::HandleMatchHasStarted()
 	SwatHUD = SwatHUD == nullptr ? Cast<ASwatHUD>(GetHUD()) : SwatHUD;
 	if (SwatHUD)
 	{
-		SwatHUD->AddCharacterOverlay();
+		if (SwatHUD->CharacterOverlay == nullptr) SwatHUD->AddCharacterOverlay();
 		if (SwatHUD->Announcement)
 		{
 			SwatHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
