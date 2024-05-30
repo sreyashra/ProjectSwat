@@ -93,7 +93,7 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			}
 		}
 		bUseFABRIK = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading;
-		bUseAimOffsets = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading;
-		bTransformRightHand = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading;
+		bUseAimOffsets = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading && !SwatCharacter->GetDisableGameplay();
+		bTransformRightHand = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading && !SwatCharacter->GetDisableGameplay();
 	}
 }

@@ -9,9 +9,12 @@
 #include "Net/UnrealNetwork.h"
 #include "ProjectSwat/Characters/SwatCharacter.h"
 #include "ProjectSwat/GameModes/SwatGameMode.h"
+#include "ProjectSwat/GameStates/SwatGameState.h"
 #include "ProjectSwat/HUD/Announcement.h"
 #include "ProjectSwat/HUD/SwatHUD.h"
 #include "ProjectSwat/HUD/CharacterOverlay.h"
+#include "ProjectSwat/PlayerStates/SwatPlayerState.h"
+#include "ProjectSwat/SwatComponents/CombatComponent.h"
 
 void ASwatPlayerController::BeginPlay()
 {
@@ -324,7 +327,41 @@ void ASwatPlayerController::HandleCooldown()
 			SwatHUD->Announcement->SetVisibility(ESlateVisibility::Visible);
 			FString AnnouncementText("New Match starts in:");
 			SwatHUD->Announcement->AnnouncementText->SetText(FText::FromString(AnnouncementText));
-			SwatHUD->Announcement->InfoText->SetText(FText());
+
+			ASwatGameState* SwatGameState = Cast<ASwatGameState>(UGameplayStatics::GetGameState(this));
+			ASwatPlayerState* SwatPlayerState = GetPlayerState<ASwatPlayerState>();
+			if (SwatGameState && SwatPlayerState)
+			{
+				TArray<ASwatPlayerState*> TopPlayers = SwatGameState->TopScoringPlayers;
+				FString InfoTextString;
+				if (TopPlayers.Num() == 0)
+				{
+					InfoTextString = FString("There is no winner.");
+				}
+				else if (TopPlayers.Num() == 1 && TopPlayers[0] == SwatPlayerState)
+				{
+					InfoTextString = FString("You are the winner.");
+				}
+				else if (TopPlayers.Num() == 1)
+				{
+					InfoTextString = FString::Printf(TEXT("Winner: \n%s"), *TopPlayers[0]->GetPlayerName());
+				}
+				else if (TopPlayers.Num() > 1)
+				{
+					InfoTextString = FString("Players tied for the win: \n");
+					for (auto TiedPlayer : TopPlayers)
+					{
+						InfoTextString.Append(FString::Printf(TEXT("%s\n"), *TiedPlayer->GetPlayerName()));
+					}
+				}
+				SwatHUD->Announcement->InfoText->SetText(FText::FromString(InfoTextString));
+			}
 		}
+	}
+	ASwatCharacter* SwatCharacter = Cast<ASwatCharacter>(GetPawn());
+	if (SwatCharacter && SwatCharacter->GetCombatComponent())
+	{
+		SwatCharacter->bDisableGameplay = true;
+		SwatCharacter->GetCombatComponent()->FirePressed(false);
 	}
 }

@@ -42,6 +42,8 @@ public:
 	// Replication
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnRep_ReplicatedMovement() override;
+	UPROPERTY(Replicated)
+	bool bDisableGameplay = false;
 
 	// Initialization
 	virtual void PostInitializeComponents() override;
@@ -57,11 +59,6 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
 
-	// Damage handling
-	UFUNCTION()
-	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
-	void UpdateHUDHealth();
-
 protected:
 	// Initialization
 	virtual void BeginPlay() override;
@@ -69,7 +66,7 @@ protected:
 	// Input actions
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
-	void Jump() override;
+	virtual void Jump() override;
 	void Equip();
 	void CrouchButtonPressed();
 	void Aim();
@@ -83,6 +80,12 @@ protected:
 	void AimOffset(float DeltaTime);
 	void SimProxiesTurn();
 	void TurnInPlace(float DeltaTime);
+	void RotateInPlace(float DeltaTime);
+
+	// Damage handling
+	UFUNCTION()
+	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
+	void UpdateHUDHealth();
 
 	// HUD and initialization
 	void PollInit();
@@ -219,6 +222,8 @@ public:
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FORCEINLINE float GetHealth() const { return Health; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combat; }
+	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
 
 	FVector GetHitTarget() const;
 	ECombatState GetCombatState() const;

@@ -36,6 +36,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void FinishedReloading();
 
+	void FirePressed(bool bPressed);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -48,8 +50,7 @@ protected:
 	void OnRep_EquippedWeapon();
 
 	void Fire();
-	void FirePressed(bool bPressed);
-
+	
 	UFUNCTION(Server, Reliable)
 	void ServerFire(const FVector_NetQuantize& TraceHitTarget);
 

@@ -79,20 +79,7 @@ void ASwatCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (GetLocalRole() > ROLE_SimulatedProxy && IsLocallyControlled())
-	{
-		AimOffset(DeltaTime);
-	}
-	else
-	{
-		TimeSinceLastReplicatedMovement += DeltaTime;
-		if (TimeSinceLastReplicatedMovement > 0.25f)
-		{
-			OnRep_ReplicatedMovement();
-		}
-		CalculateAO_Pitch();
-	}
-	
+	RotateInPlace(DeltaTime);
 	HideCameraIfCharacterIsClose();
 	PollInit();
 }
@@ -150,6 +137,7 @@ void ASwatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	DOREPLIFETIME_CONDITION(ASwatCharacter, OverlappingWeapon, COND_OwnerOnly);
 	DOREPLIFETIME(ASwatCharacter, Health);
+	DOREPLIFETIME(ASwatCharacter,bDisableGameplay);
 }
 
 void ASwatCharacter::OnRep_ReplicatedMovement()
@@ -163,6 +151,7 @@ void ASwatCharacter::OnRep_ReplicatedMovement()
 // Input Actions
 void ASwatCharacter::Move(const FInputActionValue& Value)
 {
+	if (bDisableGameplay) return;
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
@@ -191,6 +180,7 @@ void ASwatCharacter::Look(const FInputActionValue& Value)
 
 void ASwatCharacter::Jump()
 {
+	if (bDisableGameplay) return;
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -203,6 +193,7 @@ void ASwatCharacter::Jump()
 
 void ASwatCharacter::Equip()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		if (HasAuthority())
@@ -226,6 +217,7 @@ void ASwatCharacter::ServerEquip_Implementation()
 
 void ASwatCharacter::CrouchButtonPressed()
 {
+	if (bDisableGameplay) return;
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -238,6 +230,7 @@ void ASwatCharacter::CrouchButtonPressed()
 
 void ASwatCharacter::Aim()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		Combat->SetAiming(true);
@@ -246,11 +239,16 @@ void ASwatCharacter::Aim()
 
 void ASwatCharacter::StopAim()
 {
-	Combat->SetAiming(false);
+	if (bDisableGameplay) return;
+	if (Combat)
+	{
+		Combat->SetAiming(false);
+	}
 }
 
 void ASwatCharacter::Fire()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		Combat->FirePressed(true);
@@ -259,6 +257,7 @@ void ASwatCharacter::Fire()
 
 void ASwatCharacter::StopFire()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		Combat->FirePressed(false); // change this to false
@@ -267,6 +266,7 @@ void ASwatCharacter::StopFire()
 
 void ASwatCharacter::Reload()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		Combat->Reload();
@@ -376,6 +376,29 @@ void ASwatCharacter::TurnInPlace(float DeltaTime)
 	}
 }
 
+void ASwatCharacter::RotateInPlace(float DeltaTime)
+{
+	if (bDisableGameplay)
+	{
+		bUseControllerRotationYaw = false;
+		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		return;
+	}
+	if (GetLocalRole() > ROLE_SimulatedProxy && IsLocallyControlled())
+	{
+		AimOffset(DeltaTime);
+	}
+	else
+	{
+		TimeSinceLastReplicatedMovement += DeltaTime;
+		if (TimeSinceLastReplicatedMovement > 0.25f)
+		{
+			OnRep_ReplicatedMovement();
+		}
+		CalculateAO_Pitch();
+	}
+}
+
 // Damage handling and elimination
 void ASwatCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 	AController* InstigatorController, AActor* DamageCauser)
@@ -433,9 +456,10 @@ void ASwatCharacter::MulticastElim_Implementation()
 	//Disable character movement
 	GetCharacterMovement()->DisableMovement();
 	GetCharacterMovement()->StopMovementImmediately();
-	if (SwatPlayerController)
+	bDisableGameplay = true;
+	if (Combat)
 	{
-		DisableInput(SwatPlayerController);
+		Combat->FirePressed(false);
 	}
 	// Disable Collision
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);

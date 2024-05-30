@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectSwat/Characters/SwatCharacter.h"
+#include "ProjectSwat/GameStates/SwatGameState.h"
 #include "ProjectSwat/PlayerControllers/SwatPlayerController.h"
 #include "ProjectSwat/PlayerStates/SwatPlayerState.h"
 
@@ -45,6 +46,14 @@ void ASwatGameMode::Tick(float DeltaSeconds)
 			SetMatchState(MatchState::Cooldown);
 		}
 	}
+	else if (MatchState == MatchState::Cooldown)
+	{
+		CountdownTime = CooldownTime + WarmupTime + MatchTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
+		if (CountdownTime <= 0.f)
+		{
+			RestartGame();
+		}
+	}
 }
 
 void ASwatGameMode::OnMatchStateSet()
@@ -66,9 +75,12 @@ void ASwatGameMode::PlayerEliminated(ASwatCharacter* ElimmedCharacter, ASwatPlay
 	ASwatPlayerState* AttackerPlayerState = AttackerController ? Cast<ASwatPlayerState>(AttackerController->PlayerState) : nullptr;
 	ASwatPlayerState* VictimPlayerState = VictimController ? Cast<ASwatPlayerState>(VictimController->PlayerState) : nullptr;
 
-	if (AttackerPlayerState && AttackerPlayerState != VictimPlayerState)
+	ASwatGameState* SwatGameState = GetGameState<ASwatGameState>();
+	
+	if (AttackerPlayerState && AttackerPlayerState != VictimPlayerState && SwatGameState)
 	{
 		AttackerPlayerState->AddToScore(1.f);
+		SwatGameState->UpdateTopScore(AttackerPlayerState);
 	}
 
 	if (VictimPlayerState)
