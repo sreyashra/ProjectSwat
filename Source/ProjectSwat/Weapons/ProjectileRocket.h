@@ -10,6 +10,8 @@ class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundCue;
 class URocketMovementComponent;
+class USoundAttenuation;
+class UAudioComponent;
 
 UCLASS()
 class PROJECTSWAT_API AProjectileRocket : public AProjectile
@@ -24,14 +26,6 @@ protected:
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
 	virtual void BeginPlay() override;
 
-	void DestroyTimerFinished();
-
-	UPROPERTY(EditAnywhere)
-	UNiagaraSystem* TrailSystem;
-
-	UPROPERTY()
-	UNiagaraComponent* TrailSystemComponent;
-
 	UPROPERTY(EditAnywhere)
 	USoundCue* ProjectileLoop;
 
@@ -45,12 +39,6 @@ protected:
 	URocketMovementComponent* RocketMovementComponent;
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=StaticMesh, meta=(AllowPrivateAccess = "true"))
-	UStaticMeshComponent* RocketMesh;
-
-	FTimerHandle DestroyTimer;
-
-	UPROPERTY(EditAnywhere)
-	float DestroyTime = 3.f;
+	
 	
 };
