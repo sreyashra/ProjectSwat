@@ -9,6 +9,7 @@
 class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundCue;
+class URocketMovementComponent;
 
 UCLASS()
 class PROJECTSWAT_API AProjectileRocket : public AProjectile
@@ -39,6 +40,9 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	USoundAttenuation* LoopingSoundAttenuation;
+
+	UPROPERTY(VisibleAnywhere)
+	URocketMovementComponent* RocketMovementComponent;
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=StaticMesh, meta=(AllowPrivateAccess = "true"))
