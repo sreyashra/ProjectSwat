@@ -72,11 +72,9 @@ protected:
 	void Look(const FInputActionValue& Value);
 	virtual void Jump() override;
 	void Equip();
-	void CrouchButtonPressed();
-	void Aim();
-	void StopAim();
-	void Fire();
-	void StopFire();
+	void CrouchInputPressed();
+	void Aim(const FInputActionValue& Value);
+	void Fire(const FInputActionValue& Value);
 	void Reload();
 
 	// Aiming and rotation
@@ -106,7 +104,7 @@ private:
 	UCharacterTrajectoryComponent* CharacterTrajectoryComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	UCombatComponent* Combat;
+	UCombatComponent* CombatComponent;
 
 	// Input
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
@@ -226,7 +224,7 @@ public:
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FORCEINLINE float GetHealth() const { return Health; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
-	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combat; }
+	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
 
 	FVector GetHitTarget() const;

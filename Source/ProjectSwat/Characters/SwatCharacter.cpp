@@ -46,8 +46,8 @@ ASwatCharacter::ASwatCharacter()
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
 
-	Combat = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
-	Combat->SetIsReplicated(true);
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
+	CombatComponent->SetIsReplicated(true);
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
@@ -105,13 +105,13 @@ void ASwatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Started, this, &ASwatCharacter::Equip);
 
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ASwatCharacter::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ASwatCharacter::CrouchInputPressed);
 
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ASwatCharacter::Aim);
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ASwatCharacter::StopAim);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ASwatCharacter::Aim);
 
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ASwatCharacter::Fire);
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ASwatCharacter::StopFire);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ASwatCharacter::Fire);
 
 		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ASwatCharacter::Reload);
 	}
@@ -125,9 +125,9 @@ void ASwatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 void ASwatCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	if (Combat)
+	if (CombatComponent)
 	{
-		Combat->Character = this;
+		CombatComponent->SwatCharacter = this;
 	}
 }
 
@@ -194,11 +194,11 @@ void ASwatCharacter::Jump()
 void ASwatCharacter::Equip()
 {
 	if (bDisableGameplay) return;
-	if (Combat)
+	if (CombatComponent)
 	{
 		if (HasAuthority())
 		{
-			Combat->EquipWeapon(OverlappingWeapon);
+			CombatComponent->EquipWeapon(OverlappingWeapon);
 		}
 		else
 		{
@@ -209,13 +209,13 @@ void ASwatCharacter::Equip()
 
 void ASwatCharacter::ServerEquip_Implementation()
 {
-	if (Combat)
+	if (CombatComponent)
 	{
-		Combat->EquipWeapon(OverlappingWeapon);
+		CombatComponent->EquipWeapon(OverlappingWeapon);
 	}
 }
 
-void ASwatCharacter::CrouchButtonPressed()
+void ASwatCharacter::CrouchInputPressed()
 {
 	if (bDisableGameplay) return;
 	if (bIsCrouched)
@@ -228,48 +228,32 @@ void ASwatCharacter::CrouchButtonPressed()
 	}
 }
 
-void ASwatCharacter::Aim()
+void ASwatCharacter::Aim(const FInputActionValue& Value)
 {
 	if (bDisableGameplay) return;
-	if (Combat)
+	bool bIsAiming = Value.Get<bool>();
+	if (CombatComponent)
 	{
-		Combat->SetAiming(true);
+		CombatComponent->SetAiming(bIsAiming);
 	}
 }
 
-void ASwatCharacter::StopAim()
+void ASwatCharacter::Fire(const FInputActionValue& Value)
 {
 	if (bDisableGameplay) return;
-	if (Combat)
+	bool bIsFiring = Value.Get<bool>();
+	if (CombatComponent)
 	{
-		Combat->SetAiming(false);
-	}
-}
-
-void ASwatCharacter::Fire()
-{
-	if (bDisableGameplay) return;
-	if (Combat)
-	{
-		Combat->FirePressed(true);
-	}
-}
-
-void ASwatCharacter::StopFire()
-{
-	if (bDisableGameplay) return;
-	if (Combat)
-	{
-		Combat->FirePressed(false); // change this to false
+		CombatComponent->FirePressed(bIsFiring);
 	}
 }
 
 void ASwatCharacter::Reload()
 {
 	if (bDisableGameplay) return;
-	if (Combat)
+	if (CombatComponent)
 	{
-		Combat->Reload();
+		CombatComponent->Reload();
 	}
 }
 
@@ -288,7 +272,7 @@ void ASwatCharacter::CalculateAO_Pitch()
 
 void ASwatCharacter::AimOffset(float DeltaTime)
 {
-	if (Combat && Combat->EquippedWeapon == nullptr) return;
+	if (CombatComponent && CombatComponent->EquippedWeapon == nullptr) return;
 	
 	float Speed = CalculateSpeed();
 
@@ -321,7 +305,7 @@ void ASwatCharacter::AimOffset(float DeltaTime)
 
 void ASwatCharacter::SimProxiesTurn()
 {
-	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	if (CombatComponent == nullptr || CombatComponent->EquippedWeapon == nullptr) return;
 
 	bRotateRootBone = false;
 	float Speed = CalculateSpeed();
@@ -436,9 +420,9 @@ void ASwatCharacter::OnRep_Health()
 
 void ASwatCharacter::Elim()
 {
-	if (Combat && Combat->EquippedWeapon)
+	if (CombatComponent && CombatComponent->EquippedWeapon)
 	{
-		Combat->EquippedWeapon->Dropped();
+		CombatComponent->EquippedWeapon->Dropped();
 	}
 	MulticastElim();
 	GetWorldTimerManager().SetTimer(ElimTimer, this, &ASwatCharacter::ElimTimerFinished, ElimDelay);
@@ -457,16 +441,16 @@ void ASwatCharacter::MulticastElim_Implementation()
 	GetCharacterMovement()->DisableMovement();
 	GetCharacterMovement()->StopMovementImmediately();
 	bDisableGameplay = true;
-	if (Combat)
+	if (CombatComponent)
 	{
-		Combat->FirePressed(false);
+		CombatComponent->FirePressed(false);
 	}
 	// Disable Collision
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	bool bHideSniperScope = IsLocallyControlled() && Combat && Combat->bAiming && Combat->EquippedWeapon
-	&& Combat->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle;
+	bool bHideSniperScope = IsLocallyControlled() && CombatComponent && CombatComponent->bAiming && CombatComponent->EquippedWeapon
+	&& CombatComponent->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle;
 	if (bHideSniperScope)
 	{
 		ShowSniperScopeWidget(false);
@@ -514,25 +498,25 @@ void ASwatCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 
 bool ASwatCharacter::IsWeaponEquipped()
 {
-	return (Combat && Combat->EquippedWeapon);
+	return (CombatComponent && CombatComponent->EquippedWeapon);
 }
 
 bool ASwatCharacter::IsAiming()
 {
-	return (Combat && Combat->bAiming);
+	return (CombatComponent && CombatComponent->bAiming);
 }
 
 AWeapon* ASwatCharacter::GetEquippedWeapon()
 {
-	if (Combat == nullptr) return nullptr;
+	if (CombatComponent == nullptr) return nullptr;
 
-	return Combat->EquippedWeapon;
+	return CombatComponent->EquippedWeapon;
 }
 
 // Animation Montages
 void ASwatCharacter::PlayFireMontage(bool bAiming)
 {
-	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	if (CombatComponent == nullptr || CombatComponent->EquippedWeapon == nullptr) return;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -546,7 +530,7 @@ void ASwatCharacter::PlayFireMontage(bool bAiming)
 
 void ASwatCharacter::PlayReloadMontage()
 {
-	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	if (CombatComponent == nullptr || CombatComponent->EquippedWeapon == nullptr) return;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -554,7 +538,7 @@ void ASwatCharacter::PlayReloadMontage()
 	{
 		AnimInstance->Montage_Play(ReloadMontage);
 		FName SectionName ;
-		switch (Combat->EquippedWeapon->GetWeaponType())
+		switch (CombatComponent->EquippedWeapon->GetWeaponType())
 		{
 		case EWeaponType::EWT_AssaultRifle:
 			SectionName = FName("Rifle");
@@ -595,7 +579,7 @@ void ASwatCharacter::PlayElimMontage()
 
 void ASwatCharacter::PlayHitReactMontage()
 {
-	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	if (CombatComponent == nullptr || CombatComponent->EquippedWeapon == nullptr) return;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -615,17 +599,17 @@ void ASwatCharacter::HideCameraIfCharacterIsClose()
 	if ((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
 	{
 		GetMesh()->SetVisibility(false);
-		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
+		if (CombatComponent && CombatComponent->EquippedWeapon && CombatComponent->EquippedWeapon->GetWeaponMesh())
 		{
-			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
+			CombatComponent->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
 		}
 	}
 	else
 	{
 		GetMesh()->SetVisibility(true);
-		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
+		if (CombatComponent && CombatComponent->EquippedWeapon && CombatComponent->EquippedWeapon->GetWeaponMesh())
 		{
-			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
+			CombatComponent->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
 		}
 	}
 }
@@ -652,13 +636,13 @@ void ASwatCharacter::PollInit()
 
 FVector ASwatCharacter::GetHitTarget() const
 {
-	if (Combat == nullptr) return FVector();
-	return Combat->HitTarget;
+	if (CombatComponent == nullptr) return FVector();
+	return CombatComponent->HitTarget;
 }
 
 ECombatState ASwatCharacter::GetCombatState() const
 {
-	if (Combat == nullptr) return ECombatState::ECS_MAX;
+	if (CombatComponent == nullptr) return ECombatState::ECS_MAX;
 
-	return Combat->CombatState;
+	return CombatComponent->CombatState;
 }

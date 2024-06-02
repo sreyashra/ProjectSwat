@@ -26,16 +26,16 @@ void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (Character)
+	if (SwatCharacter)
 	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+		SwatCharacter->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
 
-		if (Character->GetFollowCamera())
+		if (SwatCharacter->GetFollowCamera())
 		{
-			DefaultFOV = Character->GetFollowCamera()->FieldOfView;
+			DefaultFOV = SwatCharacter->GetFollowCamera()->FieldOfView;
 			CurrentFOV = DefaultFOV;
 		}
-		if (Character->HasAuthority())
+		if (SwatCharacter->HasAuthority())
 		{
 			InitializeCarriedAmmo();
 		}
@@ -46,7 +46,7 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (Character && Character->IsLocallyControlled())
+	if (SwatCharacter && SwatCharacter->IsLocallyControlled())
 	{
 		FHitResult HitResult;
 		TraceUnderCrosshairs(HitResult);
@@ -59,9 +59,9 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 {
-	if (Character == nullptr || Character->Controller == nullptr) return;
+	if (SwatCharacter == nullptr || SwatCharacter->Controller == nullptr) return;
 
-	PlayerController = PlayerController == nullptr ? Cast<ASwatPlayerController>(Character->Controller) : PlayerController;
+	PlayerController = PlayerController == nullptr ? Cast<ASwatPlayerController>(SwatCharacter->Controller) : PlayerController;
 	if (PlayerController)
 	{
 		HUD = HUD == nullptr ? Cast<ASwatHUD>(PlayerController->GetHUD()) : HUD;
@@ -88,14 +88,14 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 			// Calculate crosshair spread
 
 			// [0, 600] -> [0, 1]
-			FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
+			FVector2D WalkSpeedRange(0.f, SwatCharacter->GetCharacterMovement()->MaxWalkSpeed);
 			FVector2D VelocityMultiplierRange(0.f, 1.0f);
-			FVector Velocity = Character->GetVelocity();
+			FVector Velocity = SwatCharacter->GetVelocity();
 			Velocity.Z = 0.f;
 
 			CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
 
-			if (Character->GetCharacterMovement()->IsFalling())
+			if (SwatCharacter->GetCharacterMovement()->IsFalling())
 			{
 				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
 			}
@@ -135,16 +135,16 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, ZoomInterpSpeed);
 	}
 
-	if (Character && Character->GetFollowCamera())
+	if (SwatCharacter && SwatCharacter->GetFollowCamera())
 	{
-		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
+		SwatCharacter->GetFollowCamera()->SetFieldOfView(CurrentFOV);
 	}
 }
 
 void UCombatComponent::StartFireTimer()
 {
-	if (EquippedWeapon == nullptr || Character == nullptr) return;
-	Character->GetWorldTimerManager().SetTimer(FireTimer, this, &UCombatComponent::FireTimerFinished, EquippedWeapon->FireDelay);
+	if (EquippedWeapon == nullptr || SwatCharacter == nullptr) return;
+	SwatCharacter->GetWorldTimerManager().SetTimer(FireTimer, this, &UCombatComponent::FireTimerFinished, EquippedWeapon->FireDelay);
 }
 
 void UCombatComponent::FireTimerFinished()
@@ -163,43 +163,43 @@ void UCombatComponent::FireTimerFinished()
 
 void UCombatComponent::SetAiming(bool bIsAiming)
 {
-	if (Character == nullptr || EquippedWeapon == nullptr) return;
+	if (SwatCharacter == nullptr || EquippedWeapon == nullptr) return;
 	bAiming = bIsAiming;
 	ServerSetAiming(bIsAiming);
-	if (Character)
+	if (SwatCharacter)
 	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+		SwatCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
 	}
-	if (Character->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
+	if (SwatCharacter->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
 	{
-		Character->ShowSniperScopeWidget(bIsAiming);
+		SwatCharacter->ShowSniperScopeWidget(bIsAiming);
 	}
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 {
 	bAiming = bIsAiming;
-	if (Character)
+	if (SwatCharacter)
 	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+		SwatCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
 	}
 }
 
 void UCombatComponent::OnRep_EquippedWeapon()
 {
-	if (EquippedWeapon && Character)
+	if (EquippedWeapon && SwatCharacter)
 	{
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 	
-		if (const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket")))
+		if (const USkeletalMeshSocket* HandSocket = SwatCharacter->GetMesh()->GetSocketByName(FName("RightHandSocket")))
 		{
-			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+			HandSocket->AttachActor(EquippedWeapon, SwatCharacter->GetMesh());
 		}
-		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-		Character->bUseControllerRotationYaw = true;
+		SwatCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+		SwatCharacter->bUseControllerRotationYaw = true;
 		if (EquippedWeapon->EquipSound)
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, Character->GetActorLocation());
+			UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, SwatCharacter->GetActorLocation());
 		}
 	}
 }
@@ -246,15 +246,19 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	{
 		FVector Start = CrosshairWorldPosition;
 
-		if (Character)
+		if (SwatCharacter)
 		{
-			float DistanceToCharacter = (Character->GetActorLocation() - Start).Size();
+			float DistanceToCharacter = (SwatCharacter->GetActorLocation() - Start).Size();
 			Start += CrosshairWorldDirection * (DistanceToCharacter + 100.f);
 		}
 
 		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
 
 		GetWorld()->LineTraceSingleByChannel(TraceHitResult, Start, End, ECC_Visibility);
+		if (!TraceHitResult.bBlockingHit)
+		{
+			TraceHitResult.ImpactPoint = End;
+		}
 		if (TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<UInteractWithCrosshairsInterface>())
 		{
 			HUDPackage.CrosshairsColor = FLinearColor::Red;
@@ -275,9 +279,9 @@ void UCombatComponent::MultiCastFire_Implementation(const FVector_NetQuantize& T
 {
 	if (EquippedWeapon == nullptr) return;
 	
-	if (Character && CombatState == ECombatState::ECS_Unoccupied)
+	if (SwatCharacter && CombatState == ECombatState::ECS_Unoccupied)
 	{
-		Character->PlayFireMontage(bAiming);
+		SwatCharacter->PlayFireMontage(bAiming);
 		EquippedWeapon->FireWeapon(TraceHitTarget);
 	}
 }
@@ -294,7 +298,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
-	if (Character == nullptr || WeaponToEquip  == nullptr) return;
+	if (SwatCharacter == nullptr || WeaponToEquip  == nullptr) return;
 	if (EquippedWeapon)
 	{
 		EquippedWeapon->Dropped();
@@ -303,12 +307,12 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	EquippedWeapon = WeaponToEquip;
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 	
-	if (const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket")))
+	if (const USkeletalMeshSocket* HandSocket = SwatCharacter->GetMesh()->GetSocketByName(FName("RightHandSocket")))
 	{
-		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		HandSocket->AttachActor(EquippedWeapon, SwatCharacter->GetMesh());
 	}
 	
-	EquippedWeapon->SetOwner(Character);
+	EquippedWeapon->SetOwner(SwatCharacter);
 	EquippedWeapon->SetHUDAmmo();
 
 	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
@@ -316,7 +320,7 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
 	}
 	
-	PlayerController = PlayerController == nullptr ? Cast<ASwatPlayerController>(Character->GetController()) : PlayerController;
+	PlayerController = PlayerController == nullptr ? Cast<ASwatPlayerController>(SwatCharacter->GetController()) : PlayerController;
 	if (PlayerController)
 	{
 		PlayerController->SetHUDCarriedAmmo(CarriedAmmo);
@@ -324,15 +328,15 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 
 	if (EquippedWeapon->EquipSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, Character->GetActorLocation());
+		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, SwatCharacter->GetActorLocation());
 	}
 	if (EquippedWeapon->IsEmpty())
 	{
 		Reload();
 	}
 
-	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-	Character->bUseControllerRotationYaw = true;
+	SwatCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+	SwatCharacter->bUseControllerRotationYaw = true;
 }
 
 void UCombatComponent::Reload()
@@ -345,8 +349,8 @@ void UCombatComponent::Reload()
 
 void UCombatComponent::FinishedReloading()
 {
-	if (Character == nullptr) return;
-	if (Character->HasAuthority())
+	if (SwatCharacter == nullptr) return;
+	if (SwatCharacter->HasAuthority())
 	{
 		CombatState = ECombatState::ECS_Unoccupied;
 		UpdateAmmoValues();
@@ -359,7 +363,7 @@ void UCombatComponent::FinishedReloading()
 
 void UCombatComponent::ServerReload_Implementation()
 {
-	if (Character == nullptr || EquippedWeapon == nullptr) return;
+	if (SwatCharacter == nullptr || EquippedWeapon == nullptr) return;
 	
 	CombatState = ECombatState::ECS_Reloading;
 	HandleReload();
@@ -367,7 +371,7 @@ void UCombatComponent::ServerReload_Implementation()
 
 void UCombatComponent::HandleReload()
 {
-	Character->PlayReloadMontage();
+	SwatCharacter->PlayReloadMontage();
 }
 
 int32 UCombatComponent::AmountToReload()
@@ -402,7 +406,7 @@ void UCombatComponent::OnRep_CombatState()
 
 void UCombatComponent::UpdateAmmoValues()
 {
-	if (Character == nullptr || EquippedWeapon == nullptr) return;
+	if (SwatCharacter == nullptr || EquippedWeapon == nullptr) return;
 	
 	int32 ReloadAmount = AmountToReload();
 	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
@@ -410,7 +414,7 @@ void UCombatComponent::UpdateAmmoValues()
 		CarriedAmmoMap[EquippedWeapon->GetWeaponType()] -= ReloadAmount;
 		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
 	}
-	PlayerController = PlayerController == nullptr ? Cast<ASwatPlayerController>(Character->GetController()) : PlayerController;
+	PlayerController = PlayerController == nullptr ? Cast<ASwatPlayerController>(SwatCharacter->GetController()) : PlayerController;
 	if (PlayerController)
 	{
 		PlayerController->SetHUDCarriedAmmo(CarriedAmmo);
@@ -426,7 +430,7 @@ bool UCombatComponent::CanFire()
 
 void UCombatComponent::OnRep_CarriedAmmo()
 {
-	PlayerController = PlayerController == nullptr ? Cast<ASwatPlayerController>(Character->GetController()) : PlayerController;
+	PlayerController = PlayerController == nullptr ? Cast<ASwatPlayerController>(SwatCharacter->GetController()) : PlayerController;
 	if (PlayerController)
 	{
 		PlayerController->SetHUDCarriedAmmo(CarriedAmmo);

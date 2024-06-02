@@ -67,7 +67,7 @@ protected:
 
 private:
 	UPROPERTY()
-	ASwatCharacter* Character;
+	ASwatCharacter* SwatCharacter;
 	UPROPERTY()
 	ASwatPlayerController* PlayerController;
 	UPROPERTY()
