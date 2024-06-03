@@ -53,6 +53,7 @@ public:
 	void PlayReloadMontage();
 	void PlayElimMontage();
 	void PlayHitReactMontage();
+	void PlayTossGrenadeMontage();
 
 	// Elimination
 	void Elim();
@@ -76,6 +77,7 @@ protected:
 	void Aim(const FInputActionValue& Value);
 	void Fire(const FInputActionValue& Value);
 	void Reload();
+	void GrenadeToss();
 
 	// Aiming and rotation
 	void CalculateAO_Pitch();
@@ -134,6 +136,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* ReloadAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta=(AllowPrivateAccess = "true"))
+	UInputAction* GrenadeTossAction;
+
 	// Widgets
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	UWidgetComponent* OverheadWidget;
@@ -168,6 +173,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* ReloadMontage;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* GrenadeTossMontage;
 
 	// Camera
 	void HideCameraIfCharacterIsClose();

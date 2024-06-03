@@ -36,6 +36,9 @@ public:
 
 	void FirePressed(bool bPressed);
 
+	UFUNCTION(BlueprintCallable)
+	void TossGrenadeFinished();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -64,6 +67,11 @@ protected:
 
 	void HandleReload();
 	int32 AmountToReload();
+
+	void GrenadeToss();
+
+	UFUNCTION(Server, Reliable)
+	void ServerGrenadeToss();
 
 private:
 	UPROPERTY()

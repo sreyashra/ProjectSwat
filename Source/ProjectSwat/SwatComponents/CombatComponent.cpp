@@ -229,6 +229,11 @@ void UCombatComponent::FirePressed(bool bPressed)
 	}
 }
 
+void UCombatComponent::TossGrenadeFinished()
+{
+	CombatState = ECombatState::ECS_Unoccupied;
+}
+
 void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 {
 	FVector2D ViewportSize;
@@ -299,6 +304,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if (SwatCharacter == nullptr || WeaponToEquip  == nullptr) return;
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
 	if (EquippedWeapon)
 	{
 		EquippedWeapon->Dropped();
@@ -341,7 +347,7 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 
 void UCombatComponent::Reload()
 {
-	if (CarriedAmmo > 0 && CombatState != ECombatState::ECS_Reloading)
+	if (CarriedAmmo > 0 && CombatState == ECombatState::ECS_Unoccupied)
 	{
 		ServerReload();
 	}
@@ -388,6 +394,29 @@ int32 UCombatComponent::AmountToReload()
 	return 0;
 }
 
+void UCombatComponent::GrenadeToss()
+{
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
+	CombatState = ECombatState::ECS_TossGrenade;
+	if (SwatCharacter)
+	{
+		SwatCharacter->PlayTossGrenadeMontage();
+	}
+	if (SwatCharacter && !SwatCharacter->HasAuthority())
+	{
+		ServerGrenadeToss();
+	}
+}
+
+void UCombatComponent::ServerGrenadeToss_Implementation()
+{
+	CombatState = ECombatState::ECS_TossGrenade;
+	if (SwatCharacter)
+	{
+		SwatCharacter->PlayTossGrenadeMontage();
+	}
+}
+
 void UCombatComponent::OnRep_CombatState()
 {
 	switch (CombatState)
@@ -399,6 +428,12 @@ void UCombatComponent::OnRep_CombatState()
 		if (bFireButtonPressed)
 		{
 			Fire();
+		}
+		break;
+	case ECombatState::ECS_TossGrenade:
+		if (SwatCharacter && !SwatCharacter->IsLocallyControlled())
+		{
+			SwatCharacter->PlayTossGrenadeMontage();
 		}
 		break;
 	}

@@ -114,6 +114,8 @@ void ASwatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ASwatCharacter::Fire);
 
 		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ASwatCharacter::Reload);
+
+		EnhancedInputComponent->BindAction(GrenadeTossAction, ETriggerEvent::Started, this, &ASwatCharacter::GrenadeToss);
 	}
 	else
 	{
@@ -254,6 +256,14 @@ void ASwatCharacter::Reload()
 	if (CombatComponent)
 	{
 		CombatComponent->Reload();
+	}
+}
+
+void ASwatCharacter::GrenadeToss()
+{
+	if (CombatComponent)
+	{
+		CombatComponent->GrenadeToss();
 	}
 }
 
@@ -547,13 +557,13 @@ void ASwatCharacter::PlayReloadMontage()
 			SectionName = FName("Rifle");
 			break;
 		case EWeaponType::EWT_Pistol:
-			SectionName = FName("Rifle");
+			SectionName = FName("Pistol");
 			break;
 		case EWeaponType::EWT_SMG:
 			SectionName = FName("Rifle");
 			break;
 		case EWeaponType::EWT_Shotgun:
-			SectionName = FName("Rifle");
+			SectionName = FName("Shotgun");
 			break;
 		case EWeaponType::EWT_SniperRifle:
 			SectionName = FName("Rifle");
@@ -588,6 +598,16 @@ void ASwatCharacter::PlayHitReactMontage()
 		AnimInstance->Montage_Play(HitReactMontage);
 		FName SectionName("FromFront");
 		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void ASwatCharacter::PlayTossGrenadeMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && GrenadeTossMontage)
+	{
+		AnimInstance->Montage_Play(GrenadeTossMontage);
 	}
 }
 

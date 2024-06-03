@@ -92,8 +92,8 @@ void USwatAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 				RightHandRotation = FMath::RInterpTo(RightHandRotation, TargetRotation, DeltaSeconds, 30.f);
 			}
 		}
-		bUseFABRIK = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading;
-		bUseAimOffsets = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading && !SwatCharacter->GetDisableGameplay();
-		bTransformRightHand = SwatCharacter->GetCombatState() != ECombatState::ECS_Reloading && !SwatCharacter->GetDisableGameplay();
+		bUseFABRIK = SwatCharacter->GetCombatState() == ECombatState::ECS_Unoccupied;
+		bUseAimOffsets = SwatCharacter->GetCombatState() == ECombatState::ECS_Unoccupied && !SwatCharacter->GetDisableGameplay();
+		bTransformRightHand = SwatCharacter->GetCombatState() == ECombatState::ECS_Unoccupied && !SwatCharacter->GetDisableGameplay();
 	}
 }

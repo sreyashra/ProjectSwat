@@ -2,6 +2,10 @@
 
 #define TRACE_LENGTH 80000
 
+#define CUSTOM_DEPTH_YELLOW 250
+#define CUSTOM_DEPTH_RED 251
+#define CUSTOM_DEPTH_TAN 250
+
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
