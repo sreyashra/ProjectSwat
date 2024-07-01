@@ -73,6 +73,13 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerGrenadeToss();
 
+	void DropEquippedWeapon();
+	void AttachActorToRightHand(AActor* ActorToAttach);
+	void AttachActorToLeftHand(AActor* ActorToAttach);
+	void UpdateCarriedAmmo();
+	void PlayEquipWeaponSound();
+	void ReloadEmptyWeapon();
+
 private:
 	UPROPERTY()
 	ASwatCharacter* SwatCharacter;
